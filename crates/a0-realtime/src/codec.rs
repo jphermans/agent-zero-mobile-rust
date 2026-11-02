@@ -34,10 +34,7 @@ pub enum SocketPacket {
     /// `41[/<nsp>]` — namespace disconnect.
     Disconnect { nsp: String },
     /// `42[/<nsp>,<id>][<json array>]` — event.
-    Event {
-        nsp: String,
-        data: Vec<JSONValue>,
-    },
+    Event { nsp: String, data: Vec<JSONValue> },
     /// `43[/<nsp>,]<id>[<json array>]` — ack for a previous emit.
     Ack {
         nsp: String,
@@ -89,9 +86,10 @@ fn parse_socket(rest: &str) -> Result<SocketPacket> {
             let payload = if rest.is_empty() {
                 None
             } else {
-                Some(serde_json::from_str(rest).map_err(|e| {
-                    RealtimeError::Codec(format!("connect payload: {e}"))
-                })?)
+                Some(
+                    serde_json::from_str(rest)
+                        .map_err(|e| RealtimeError::Codec(format!("connect payload: {e}")))?,
+                )
             };
             Ok(SocketPacket::Connect { nsp, payload })
         }
@@ -99,8 +97,7 @@ fn parse_socket(rest: &str) -> Result<SocketPacket> {
         2 | 3 => {
             // Leading digits form the ack id (mandatory for ack, optional for
             // event packets); the remainder is a JSON array of data items.
-            let digits: String =
-                rest.chars().take_while(|c| c.is_ascii_digit()).collect();
+            let digits: String = rest.chars().take_while(|c| c.is_ascii_digit()).collect();
             let rest = &rest[digits.len()..];
             let id: u64 = digits.parse().unwrap_or(0);
             let data = if rest.is_empty() {
@@ -266,9 +263,7 @@ mod tests {
     fn parses_namespace_only_disconnect_and_connect_without_payload() {
         assert_eq!(
             parse_frame("41/ws").unwrap(),
-            EngineFrame::Message(SocketPacket::Disconnect {
-                nsp: "/ws".into()
-            })
+            EngineFrame::Message(SocketPacket::Disconnect { nsp: "/ws".into() })
         );
         assert_eq!(
             parse_frame("40/ws").unwrap(),

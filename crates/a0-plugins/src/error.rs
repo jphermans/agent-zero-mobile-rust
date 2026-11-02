@@ -13,9 +13,7 @@ pub enum PluginsError {
     /// response). The caller must reconcile manually; the service never
     /// auto-repeats it (protocol inventory §6, project instruction §9).
     #[error("uncertain result after {operation}; manual reconciliation required")]
-    UncertainResult {
-        operation: String,
-    },
+    UncertainResult { operation: String },
 
     /// The plugin is protected and rejects the requested operation.
     #[error("plugin '{0}' is protected")]

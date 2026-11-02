@@ -20,7 +20,10 @@ pub async fn stop(client: &A0Client, context: &str) -> Result<bool, ApiError> {
     client.require_socket_session()?;
     let payload = json!({ "context": context });
     let response: Value = client.post_json("/api/stop", &payload, CAP_2MIB).await?;
-    let ctx = response.get("context").and_then(Value::as_str).unwrap_or("");
+    let ctx = response
+        .get("context")
+        .and_then(Value::as_str)
+        .unwrap_or("");
     let stopped = response.get("stopped").and_then(Value::as_bool);
     if ctx != context || stopped.is_none() {
         return Err(ApiError::Protocol("incompatiblePayload".to_string()));
@@ -68,8 +71,11 @@ pub struct HistoryContent {
 pub async fn history_get(client: &A0Client, context: &str) -> Result<HistoryContent, ApiError> {
     client.require_socket_session()?;
     let payload = json!({ "context": context });
-    let response: Value = client.post_json("/api/history_get", &payload, CAP_2MIB).await?;
-    serde_json::from_value(response).map_err(|_| ApiError::Protocol("incompatiblePayload".to_string()))
+    let response: Value = client
+        .post_json("/api/history_get", &payload, CAP_2MIB)
+        .await?;
+    serde_json::from_value(response)
+        .map_err(|_| ApiError::Protocol("incompatiblePayload".to_string()))
 }
 
 /// §3.2 `POST /api/ctx_window_get` response: `content`: string; optional
@@ -82,9 +88,15 @@ pub struct CtxWindowContent {
 }
 
 /// §3.2 `POST /api/ctx_window_get`: request `{"context":"<ctx>"}`.
-pub async fn ctx_window_get(client: &A0Client, context: &str) -> Result<CtxWindowContent, ApiError> {
+pub async fn ctx_window_get(
+    client: &A0Client,
+    context: &str,
+) -> Result<CtxWindowContent, ApiError> {
     client.require_socket_session()?;
     let payload = json!({ "context": context });
-    let response: Value = client.post_json("/api/ctx_window_get", &payload, CAP_2MIB).await?;
-    serde_json::from_value(response).map_err(|_| ApiError::Protocol("incompatiblePayload".to_string()))
+    let response: Value = client
+        .post_json("/api/ctx_window_get", &payload, CAP_2MIB)
+        .await?;
+    serde_json::from_value(response)
+        .map_err(|_| ApiError::Protocol("incompatiblePayload".to_string()))
 }

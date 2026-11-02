@@ -50,7 +50,13 @@ pub struct UploadFile {
 pub fn upload_name(basename: &str, uuid: &str) -> String {
     let mut sanitized: String = basename
         .chars()
-        .map(|c| if c.is_ascii_alphanumeric() || c == '.' || c == '-' || c == '_' { c } else { '_' })
+        .map(|c| {
+            if c.is_ascii_alphanumeric() || c == '.' || c == '-' || c == '_' {
+                c
+            } else {
+                '_'
+            }
+        })
         .collect();
     sanitized.truncate(120);
     while sanitized.ends_with('.') {
@@ -102,10 +108,8 @@ impl MultipartBody {
         self.body
             .extend_from_slice(format!("--{}\r\n", self.boundary).as_bytes());
         self.body.extend_from_slice(
-            format!(
-                "Content-Disposition: form-data; name=\"{field}\"; filename=\"{name}\"\r\n"
-            )
-            .as_bytes(),
+            format!("Content-Disposition: form-data; name=\"{field}\"; filename=\"{name}\"\r\n")
+                .as_bytes(),
         );
         self.body
             .extend_from_slice(format!("Content-Type: {}\r\n\r\n", file.mime).as_bytes());
@@ -132,7 +136,10 @@ fn check_count(files: &[UploadFile]) -> Result<(), ApiError> {
 /// Flow 1a (§7, `Attachments.swift:74-78`): `POST /api/upload` with file
 /// parts named `file` and NO text fields. The response must decode
 /// `{"filenames":[…]}` equal to the client-computed upload names, in order.
-pub async fn upload_files(client: &A0Client, files: &[UploadFile]) -> Result<Vec<String>, ApiError> {
+pub async fn upload_files(
+    client: &A0Client,
+    files: &[UploadFile],
+) -> Result<Vec<String>, ApiError> {
     check_count(files)?;
     client.require_socket_session()?;
     let boundary = format!("A0-{}", client.new_request_id());
@@ -226,7 +233,10 @@ pub async fn message_queue_add_with_attachments(
         .post_json("/api/message_queue_add", &payload, 64 * 1024)
         .await?;
     let ok = response.get("ok").and_then(Value::as_bool).unwrap_or(false);
-    let echoed = response.get("item_id").and_then(Value::as_str).unwrap_or("");
+    let echoed = response
+        .get("item_id")
+        .and_then(Value::as_str)
+        .unwrap_or("");
     if !ok || echoed != item_id {
         return Err(ApiError::Protocol("incompatiblePayload".to_string()));
     }
@@ -287,16 +297,25 @@ mod tests {
         mp.file("attachments", "U-shot.png", &file).unwrap();
         let (body, content_type) = mp.finish();
         let text = String::from_utf8_lossy(&body);
-        assert_eq!(content_type, "multipart/form-data; boundary=A0-test-boundary");
-        assert!(text.contains("Content-Disposition: form-data; name=\"context\"\r\n\r\nctx-1\r
-"));
-        assert!(text.contains("Content-Disposition: form-data; name=\"text\"\r\n\r\nhello\r
-"));
+        assert_eq!(
+            content_type,
+            "multipart/form-data; boundary=A0-test-boundary"
+        );
+        assert!(text.contains(
+            "Content-Disposition: form-data; name=\"context\"\r\n\r\nctx-1\r
+"
+        ));
+        assert!(text.contains(
+            "Content-Disposition: form-data; name=\"text\"\r\n\r\nhello\r
+"
+        ));
         assert!(text.contains(
             "Content-Disposition: form-data; name=\"attachments\"; filename=\"U-shot.png\"\r\n"
         ));
-        assert!(text.contains("Content-Type: image/png\r\n\r\nPNGDATA\r
-"));
+        assert!(text.contains(
+            "Content-Type: image/png\r\n\r\nPNGDATA\r
+"
+        ));
         assert!(text.ends_with("--A0-test-boundary--\r\n"));
         // Text parts must NOT carry a filename.
         assert!(!text.contains("name=\"context\"; filename"));

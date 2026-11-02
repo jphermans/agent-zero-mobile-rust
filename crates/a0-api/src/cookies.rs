@@ -103,8 +103,14 @@ fn parse_http_date(value: &str) -> Option<u64> {
         let year: i64 = tokens[3].parse().ok()?;
         let hms: Vec<&str> = tokens[4].split(':').collect();
         if hms.len() == 3 {
-            let (h, m, s): (i64, i64, i64) = (hms[0].parse().ok()?, hms[1].parse().ok()?, hms[2].parse().ok()?);
-            return Some((days_from_civil(year, month, day) * 86400 + h * 3600 + m * 60 + s).max(0) as u64);
+            let (h, m, s): (i64, i64, i64) = (
+                hms[0].parse().ok()?,
+                hms[1].parse().ok()?,
+                hms[2].parse().ok()?,
+            );
+            return Some(
+                (days_from_civil(year, month, day) * 86400 + h * 3600 + m * 60 + s).max(0) as u64,
+            );
         }
     }
     // Remaining formats are rare on modern backends; treat as non-expiring
@@ -167,14 +173,6 @@ impl CookieJar {
 
     pub(crate) fn get(&self, name: &str) -> Option<&Cookie> {
         self.cookies.get(name)
-    }
-
-    pub(crate) fn remove(&mut self, name: &str) {
-        self.cookies.remove(name);
-    }
-
-    pub(crate) fn names(&self) -> Vec<&str> {
-        self.cookies.keys().map(|s| s.as_str()).collect()
     }
 
     pub(crate) fn clear(&mut self) {

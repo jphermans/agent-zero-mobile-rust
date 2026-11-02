@@ -59,14 +59,21 @@ fn validate_presets(presets: &[ModelPreset]) -> Result<(), ApiError> {
 }
 
 /// §3.6 `POST /api/plugins/_model_config/model_presets` action `get`.
-pub async fn presets_get(client: &A0Client, context_id: Option<&str>) -> Result<ModelPresetsGet, ApiError> {
+pub async fn presets_get(
+    client: &A0Client,
+    context_id: Option<&str>,
+) -> Result<ModelPresetsGet, ApiError> {
     client.require_socket_session()?;
     let mut payload = json!({ "action": "get" });
     if let Some(ctx) = context_id {
         payload["context_id"] = json!(ctx);
     }
     let response: Value = client
-        .post_json("/api/plugins/_model_config/model_presets", &payload, CAP_2MIB)
+        .post_json(
+            "/api/plugins/_model_config/model_presets",
+            &payload,
+            CAP_2MIB,
+        )
         .await?;
     if !response.get("ok").and_then(Value::as_bool).unwrap_or(false) {
         return Err(ApiError::Protocol("rejected".to_string()));
@@ -113,14 +120,22 @@ pub fn strip_preset_secrets(preset: &mut Value) {
 }
 
 /// §3.6 `POST .../model_presets` action `save`: `{ok,"presets":[…]}`.
-pub async fn presets_save(client: &A0Client, mut presets: Vec<Value>, renames: Vec<PresetRename>) -> Result<Vec<ModelPreset>, ApiError> {
+pub async fn presets_save(
+    client: &A0Client,
+    mut presets: Vec<Value>,
+    renames: Vec<PresetRename>,
+) -> Result<Vec<ModelPreset>, ApiError> {
     client.require_socket_session()?;
     for preset in &mut presets {
         strip_preset_secrets(preset);
     }
     let payload = json!({ "action": "save", "presets": presets, "renames": renames });
     let response: Value = client
-        .post_json("/api/plugins/_model_config/model_presets", &payload, CAP_2MIB)
+        .post_json(
+            "/api/plugins/_model_config/model_presets",
+            &payload,
+            CAP_2MIB,
+        )
         .await?;
     if !response.get("ok").and_then(Value::as_bool).unwrap_or(false) {
         return Err(ApiError::Protocol("rejected".to_string()));
@@ -140,7 +155,11 @@ pub async fn presets_reset(client: &A0Client) -> Result<Vec<ModelPreset>, ApiErr
     client.require_socket_session()?;
     let payload = json!({ "action": "reset" });
     let response: Value = client
-        .post_json("/api/plugins/_model_config/model_presets", &payload, CAP_2MIB)
+        .post_json(
+            "/api/plugins/_model_config/model_presets",
+            &payload,
+            CAP_2MIB,
+        )
         .await?;
     if !response.get("ok").and_then(Value::as_bool).unwrap_or(false) {
         return Err(ApiError::Protocol("rejected".to_string()));
@@ -173,10 +192,17 @@ pub async fn presets_select(
         payload["context_id"] = json!(ctx);
     }
     let response: Value = client
-        .post_json("/api/plugins/_model_config/model_presets", &payload, CAP_2MIB)
+        .post_json(
+            "/api/plugins/_model_config/model_presets",
+            &payload,
+            CAP_2MIB,
+        )
         .await?;
     let ok = response.get("ok").and_then(Value::as_bool).unwrap_or(false);
-    let selected = response.get("selected_preset").and_then(Value::as_str).unwrap_or("");
+    let selected = response
+        .get("selected_preset")
+        .and_then(Value::as_str)
+        .unwrap_or("");
     if !ok || selected != name {
         return Err(ApiError::Protocol("incompatiblePayload".to_string()));
     }
@@ -196,13 +222,21 @@ pub struct ModelOverrideGet {
 }
 
 /// §3.6 `POST /api/plugins/_model_config/model_override` action `get`.
-pub async fn override_get(client: &A0Client, context_id: &str) -> Result<ModelOverrideGet, ApiError> {
+pub async fn override_get(
+    client: &A0Client,
+    context_id: &str,
+) -> Result<ModelOverrideGet, ApiError> {
     client.require_socket_session()?;
     let payload = json!({ "action": "get", "context_id": context_id });
     let response: Value = client
-        .post_json("/api/plugins/_model_config/model_override", &payload, CAP_2MIB)
+        .post_json(
+            "/api/plugins/_model_config/model_override",
+            &payload,
+            CAP_2MIB,
+        )
         .await?;
-    serde_json::from_value(response).map_err(|_| ApiError::Protocol("incompatiblePayload".to_string()))
+    serde_json::from_value(response)
+        .map_err(|_| ApiError::Protocol("incompatiblePayload".to_string()))
 }
 
 /// §3.6 `model_override` `set_preset` (`ModelPresets.swift:191-198`) WITH the
@@ -210,8 +244,13 @@ pub async fn override_get(client: &A0Client, context_id: &str) -> Result<ModelOv
 /// EXACTLY `Per-chat override is disabled` maps to [`AuthErrorKind::OverrideDisabled`]
 /// WITHOUT clearing the session. Any other 403 follows the §1 uniform rule
 /// (`csrfRejected`, session cleared).
-pub async fn override_set_preset(client: &A0Client, context_id: &str, preset_name: &str) -> Result<(), ApiError> {
-    let payload = json!({ "action": "set_preset", "context_id": context_id, "preset_name": preset_name });
+pub async fn override_set_preset(
+    client: &A0Client,
+    context_id: &str,
+    preset_name: &str,
+) -> Result<(), ApiError> {
+    let payload =
+        json!({ "action": "set_preset", "context_id": context_id, "preset_name": preset_name });
     let spec = crate::client::RequestSpec {
         method: reqwest::Method::POST,
         path_and_query: "/api/plugins/_model_config/model_override".to_string(),
@@ -233,18 +272,24 @@ pub async fn override_set_preset(client: &A0Client, context_id: &str, preset_nam
             .unwrap_or(false);
         if login_redirect {
             client.clear_session();
-            return Err(ApiError::Auth { kind: AuthErrorKind::RequiresLogin });
+            return Err(ApiError::Auth {
+                kind: AuthErrorKind::RequiresLogin,
+            });
         }
         return Err(ApiError::Status { code: status });
     }
     if status == 403 {
         let body_text = String::from_utf8_lossy(&body);
         if body_text.trim() == OVERRIDE_DISABLED_BODY {
-            return Err(ApiError::Auth { kind: AuthErrorKind::OverrideDisabled });
+            return Err(ApiError::Auth {
+                kind: AuthErrorKind::OverrideDisabled,
+            });
         }
         // §1 uniform 403: session cleared, csrfRejected.
         client.clear_session();
-        return Err(ApiError::Auth { kind: AuthErrorKind::CsrfRejected });
+        return Err(ApiError::Auth {
+            kind: AuthErrorKind::CsrfRejected,
+        });
     }
     if !(200..300).contains(&status) {
         return Err(ApiError::Status { code: status });
@@ -252,7 +297,10 @@ pub async fn override_set_preset(client: &A0Client, context_id: &str, preset_nam
     let response: Value = serde_json::from_slice(&body)
         .map_err(|_| ApiError::Protocol("incompatiblePayload".to_string()))?;
     let ok = response.get("ok").and_then(Value::as_bool).unwrap_or(false);
-    let echoed = response.get("preset_name").and_then(Value::as_str).unwrap_or("");
+    let echoed = response
+        .get("preset_name")
+        .and_then(Value::as_str)
+        .unwrap_or("");
     if !ok || echoed != preset_name {
         return Err(ApiError::Protocol("incompatiblePayload".to_string()));
     }
@@ -264,10 +312,17 @@ pub async fn override_clear(client: &A0Client, context_id: &str) -> Result<Strin
     client.require_socket_session()?;
     let payload = json!({ "action": "clear", "context_id": context_id });
     let response: Value = client
-        .post_json("/api/plugins/_model_config/model_override", &payload, CAP_2MIB)
+        .post_json(
+            "/api/plugins/_model_config/model_override",
+            &payload,
+            CAP_2MIB,
+        )
         .await?;
     let ok = response.get("ok").and_then(Value::as_bool).unwrap_or(false);
-    let effective = response.get("effective_preset").and_then(Value::as_str).unwrap_or("");
+    let effective = response
+        .get("effective_preset")
+        .and_then(Value::as_str)
+        .unwrap_or("");
     if !ok || effective.is_empty() {
         return Err(ApiError::Protocol("incompatiblePayload".to_string()));
     }
@@ -312,7 +367,11 @@ fn validate_provider_list(list: &[ProviderEntry]) -> Result<(), ApiError> {
 pub async fn config_get(client: &A0Client) -> Result<ModelConfig, ApiError> {
     client.require_socket_session()?;
     let response: Value = client
-        .post_json("/api/plugins/_model_config/model_config_get", &json!({}), CAP_2MIB)
+        .post_json(
+            "/api/plugins/_model_config/model_config_get",
+            &json!({}),
+            CAP_2MIB,
+        )
         .await?;
     let config: ModelConfig = serde_json::from_value(response)
         .map_err(|_| ApiError::Protocol("incompatiblePayload".to_string()))?;
@@ -344,7 +403,10 @@ pub struct ModelSearchResponse {
 }
 
 /// §3.6 `POST /api/plugins/_model_config/model_search`.
-pub async fn model_search(client: &A0Client, request: ModelSearchRequest) -> Result<ModelSearchResponse, ApiError> {
+pub async fn model_search(
+    client: &A0Client,
+    request: ModelSearchRequest,
+) -> Result<ModelSearchResponse, ApiError> {
     if request.provider.is_empty()
         || request.provider.len() > 256
         || request.api_base.len() > 4096
@@ -360,14 +422,19 @@ pub async fn model_search(client: &A0Client, request: ModelSearchRequest) -> Res
         "api_base": request.api_base,
     });
     let response: Value = client
-        .post_json("/api/plugins/_model_config/model_search", &payload, CAP_2MIB)
+        .post_json(
+            "/api/plugins/_model_config/model_search",
+            &payload,
+            CAP_2MIB,
+        )
         .await?;
     let parsed: ModelSearchResponse = serde_json::from_value(response)
         .map_err(|_| ApiError::Protocol("incompatiblePayload".to_string()))?;
     if parsed.provider != request.provider {
         return Err(ApiError::Protocol("incompatiblePayload".to_string()));
     }
-    if parsed.models.len() > 20_000 || parsed.models.iter().any(|m| m.is_empty() || m.len() > 2048) {
+    if parsed.models.len() > 20_000 || parsed.models.iter().any(|m| m.is_empty() || m.len() > 2048)
+    {
         return Err(ApiError::Protocol("incompatiblePayload".to_string()));
     }
     Ok(parsed)

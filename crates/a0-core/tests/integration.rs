@@ -66,7 +66,9 @@ fn full_snapshot() -> Snapshot {
 /// Arms a reducer with the sec 8.6 ack and commits the sec 8.1 fixture.
 fn bootstrapped_reducer() -> SyncReducer {
     let ack: HandshakeAck = serde_json::from_str(HANDSHAKE_ACK_VALID).unwrap();
-    let ack_data = ack.validated("request-1").expect("fixture 8.6 must validate");
+    let ack_data = ack
+        .validated("request-1")
+        .expect("fixture 8.6 must validate");
     assert_eq!(ack_data.runtime_epoch, "runtime");
     assert_eq!(ack_data.seq_base, 1);
 
@@ -122,7 +124,10 @@ fn command_delivery_round_trip_then_delta_push_applies() {
     command.transition(DeliveryStatus::Sending).unwrap();
     command.transition(DeliveryStatus::Acked).unwrap();
     assert_eq!(command.status, DeliveryStatus::Acked);
-    assert!(command.transition(DeliveryStatus::Sending).is_err(), "no auto-resend edge");
+    assert!(
+        command.transition(DeliveryStatus::Sending).is_err(),
+        "no auto-resend edge"
+    );
 
     // The next in-sequence delta (sec 8.2 fixture) applies on top.
     let (report, effects) = reducer
@@ -183,7 +188,10 @@ fn stale_epoch_after_recovery_requires_resync_and_request_resets_offsets() {
     reducer.invalidate_for_recovery();
     assert!(reducer.current_snapshot().is_some());
     let request = reducer.state_request("UTC");
-    assert_eq!(request.log_from, 0, "offsets collapse to 0 while recovering");
+    assert_eq!(
+        request.log_from, 0,
+        "offsets collapse to 0 while recovering"
+    );
     assert_eq!(request.notifications_from, 0);
 
     // Pushes buffer until the next handshake arms a new epoch.
@@ -198,9 +206,18 @@ fn stale_epoch_after_recovery_requires_resync_and_request_resets_offsets() {
     reducer.begin_handshake("runtime-2", 0);
     let pending = reducer.take_pending_pushes();
     assert_eq!(pending.len(), 1);
-    let stale = StatePush::new(pending[0].runtime_epoch.clone(), pending[0].seq, pending[0].snapshot.clone());
+    let stale = StatePush::new(
+        pending[0].runtime_epoch.clone(),
+        pending[0].seq,
+        pending[0].snapshot.clone(),
+    );
     let (report, effects) = reducer.apply_push(stale).unwrap();
-    assert_eq!(report, ApplyReport::Rejected { reason: a0_core::PushRejectReason::StaleEpoch });
+    assert_eq!(
+        report,
+        ApplyReport::Rejected {
+            reason: a0_core::PushRejectReason::StaleEpoch
+        }
+    );
     assert_eq!(effects, vec![Effect::RequestResync]);
     assert!(reducer.needs_full_sync());
 
@@ -228,7 +245,11 @@ fn pre_handshake_overflow_fails_the_attempt_without_corruption() {
     assert!(reducer
         .apply_push(StatePush::new("runtime", 33, full_snapshot()))
         .is_err());
-    assert_eq!(reducer.pending_count(), 32, "overflowing push must not partially land");
+    assert_eq!(
+        reducer.pending_count(),
+        32,
+        "overflowing push must not partially land"
+    );
 }
 
 #[test]

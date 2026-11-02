@@ -21,7 +21,11 @@ const BASE: &str = "/api/plugins/_a0_connector/v1";
 /// §3.8 (`HostConnection.swift:102-105`): `target_id`/`generation` are
 /// exactly 64 lowercase-hex characters.
 fn validate_hex64(value: &str) -> Result<(), ApiError> {
-    if value.len() != 64 || !value.bytes().all(|b| b.is_ascii_hexdigit() && !b.is_ascii_uppercase()) {
+    if value.len() != 64
+        || !value
+            .bytes()
+            .all(|b| b.is_ascii_hexdigit() && !b.is_ascii_uppercase())
+    {
         return Err(ApiError::Protocol("invalidHex64".to_string()));
     }
     Ok(())
@@ -30,7 +34,12 @@ fn validate_hex64(value: &str) -> Result<(), ApiError> {
 /// Generic §3.8 dispatch: session guard, POST, 64 KiB cap. `allow_404`
 /// returns `Ok(Value::Null)` when the connector route is missing
 /// (`HostConnection.swift:112,147`).
-async fn call_route(client: &A0Client, route: &str, payload: Value, allow_404: bool) -> Result<Value, ApiError> {
+async fn call_route(
+    client: &A0Client,
+    route: &str,
+    payload: Value,
+    allow_404: bool,
+) -> Result<Value, ApiError> {
     // §2.5 feature-method guard before mutating endpoints.
     client.require_socket_session()?;
     let response: Result<Value, ApiError> = client
@@ -56,9 +65,9 @@ pub struct Capabilities {
 pub async fn capabilities(client: &A0Client) -> Result<Option<Capabilities>, ApiError> {
     match call_route(client, "capabilities", json!({}), true).await? {
         Value::Null => Ok(None),
-        v => Ok(Some(
-            serde_json::from_value(v).map_err(|_| ApiError::Protocol("incompatiblePayload".to_string()))?,
-        )),
+        v => Ok(Some(serde_json::from_value(v).map_err(|_| {
+            ApiError::Protocol("incompatiblePayload".to_string())
+        })?)),
     }
 }
 
@@ -78,7 +87,10 @@ fn validate_capability_states(capabilities: &Value) -> Result<(), ApiError> {
     for (_name, entry) in map {
         let state = entry.get("state").and_then(Value::as_str).unwrap_or("");
         let ready = entry.get("ready").and_then(Value::as_bool).unwrap_or(false);
-        if !matches!(state, "ready" | "off" | "unsupported" | "needs_attention" | "container") {
+        if !matches!(
+            state,
+            "ready" | "off" | "unsupported" | "needs_attention" | "container"
+        ) {
             return Err(ApiError::Protocol("incompatiblePayload".to_string()));
         }
         if ready != (state == "ready") {
@@ -177,39 +189,51 @@ pub struct HostTaskResult {
     pub queued: bool,
 }
 
-/// §3.8 `POST .../host_task` (`HostConnection.swift:134-141`): request
-/// `{"context","text","message_id","queued":"true"|"false","target_id",
-/// "generation","capability":"browser"|"computer_use"}` — note `queued` is
-/// a STRING here, but a bool in the response.
+/// §3.8 `host_task` request (`HostConnection.swift:134-141`). The wire maps
+/// `queued` to the STRING `"true"|"false"` in the request (a bool in the
+/// response); `capability` is `"browser"` or `"computer_use"`.
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct HostTaskRequest {
+    pub context: String,
+    pub text: String,
+    pub message_id: String,
+    pub queued: bool,
+    pub target_id: String,
+    pub generation: String,
+    pub capability: String,
+}
+
+impl HostTaskRequest {
+    fn validate(&self) -> Result<(), ApiError> {
+        validate_hex64(&self.target_id)?;
+        validate_hex64(&self.generation)?;
+        if !matches!(self.capability.as_str(), "browser" | "computer_use") {
+            return Err(ApiError::Protocol("invalidCapability".to_string()));
+        }
+        Ok(())
+    }
+}
+
+/// §3.8 `POST .../host_task` (`HostConnection.swift:134-141`).
 pub async fn host_task(
     client: &A0Client,
-    context: &str,
-    text: &str,
-    message_id: &str,
-    queued: bool,
-    target_id: &str,
-    generation: &str,
-    capability: &str,
+    request: &HostTaskRequest,
 ) -> Result<HostTaskResult, ApiError> {
-    validate_hex64(target_id)?;
-    validate_hex64(generation)?;
-    if !matches!(capability, "browser" | "computer_use") {
-        return Err(ApiError::Protocol("invalidCapability".to_string()));
-    }
+    request.validate()?;
     let payload = json!({
-        "context": context,
-        "text": text,
-        "message_id": message_id,
-        "queued": if queued { "true" } else { "false" },
-        "target_id": target_id,
-        "generation": generation,
-        "capability": capability,
+        "context": request.context.as_str(),
+        "text": request.text.as_str(),
+        "message_id": request.message_id.as_str(),
+        "queued": if request.queued { "true" } else { "false" },
+        "target_id": request.target_id.as_str(),
+        "generation": request.generation.as_str(),
+        "capability": request.capability.as_str(),
     });
     let v = call_route(client, "host_task", payload, false).await?;
     let ok = v.get("ok").and_then(Value::as_bool).unwrap_or(false);
     let result: HostTaskResult = serde_json::from_value(v.clone())
         .map_err(|_| ApiError::Protocol("incompatiblePayload".to_string()))?;
-    if !ok || result.context != context || result.message_id != message_id {
+    if !ok || result.context != request.context || result.message_id != request.message_id {
         return Err(ApiError::Protocol("incompatiblePayload".to_string()));
     }
     Ok(result)

@@ -81,7 +81,11 @@ impl Origin {
             _ => return Err(invalid()),
         }
         url.set_path(""); // host lower-cased, path stripped (§1, `HTTPClient.swift:44`)
-        Ok(Origin { url, host, debug_loopback: allow_debug_loopback_http })
+        Ok(Origin {
+            url,
+            host,
+            debug_loopback: allow_debug_loopback_http,
+        })
     }
 
     pub fn url(&self) -> &Url {
@@ -169,7 +173,8 @@ pub struct A0ClientBuilder {
     total_timeout: Duration,
     mutation_timeout: Duration,
     retry_seed: u64,
-    tls_adjuster: Option<Box<dyn Fn(reqwest::ClientBuilder) -> reqwest::ClientBuilder + Send + Sync>>,
+    tls_adjuster:
+        Option<Box<dyn Fn(reqwest::ClientBuilder) -> reqwest::ClientBuilder + Send + Sync>>,
 }
 
 impl A0ClientBuilder {
@@ -319,11 +324,6 @@ impl A0Client {
         })
     }
 
-    /// Held auth state (csrf + runtime id) for tests and `a0-auth` restore.
-    pub(crate) fn auth_state(&self) -> Option<AuthState> {
-        Self::lock(&self.state).clone()
-    }
-
     /// §2.3: insert a restored session cookie (validation lives in `a0-auth`).
     pub fn insert_session_cookie(&self, name: &str, value: &str) {
         Self::lock(&self.jar).set(crate::cookies::Cookie {
@@ -374,15 +374,23 @@ impl A0Client {
     pub(crate) fn classify_status(&self, status: u16, location: Option<&str>) -> Option<ApiError> {
         match status {
             200..=299 => None,
-            401 => Some(ApiError::Auth { kind: AuthErrorKind::RequiresLogin }),
-            403 => Some(ApiError::Auth { kind: AuthErrorKind::CsrfRejected }),
+            401 => Some(ApiError::Auth {
+                kind: AuthErrorKind::RequiresLogin,
+            }),
+            403 => Some(ApiError::Auth {
+                kind: AuthErrorKind::CsrfRejected,
+            }),
             300..=399 => {
                 let login_redirect = location
                     .and_then(|loc| self.origin.url.join(loc).ok())
-                    .map(|resolved| self.origin.same_origin(&resolved) && resolved.path() == "/login")
+                    .map(|resolved| {
+                        self.origin.same_origin(&resolved) && resolved.path() == "/login"
+                    })
                     .unwrap_or(false);
                 Some(if login_redirect {
-                    ApiError::Auth { kind: AuthErrorKind::RequiresLogin }
+                    ApiError::Auth {
+                        kind: AuthErrorKind::RequiresLogin,
+                    }
                 } else {
                     ApiError::Status { code: status }
                 })
@@ -405,18 +413,28 @@ impl A0Client {
     /// total timeout (30 s reads / 60 s mutations per task contract), then
     /// Set-Cookie absorption (§1 `HTTPClient.swift:273-278`) and the §1
     /// post-transfer epoch re-check (`HTTPClient.swift:269-272`).
-    pub(crate) async fn send_once(&self, spec: &RequestSpec, mutation: bool) -> Result<reqwest::Response, ApiError> {
+    pub(crate) async fn send_once(
+        &self,
+        spec: &RequestSpec,
+        mutation: bool,
+    ) -> Result<reqwest::Response, ApiError> {
         let epoch_before = self.epoch.load(Ordering::SeqCst);
         let method = spec.method.clone();
         let url = format!("{}{}", self.origin, spec.path_and_query);
         let mut rb = self.http.request(method, &url);
-        rb = rb.header(reqwest::header::ACCEPT, spec.accept.unwrap_or("application/json"));
+        rb = rb.header(
+            reqwest::header::ACCEPT,
+            spec.accept.unwrap_or("application/json"),
+        );
         rb = rb.header(reqwest::header::ORIGIN, self.origin.to_string());
         match &spec.body {
             Body::None => {}
             Body::Json(v) => {
                 rb = rb.header(reqwest::header::CONTENT_TYPE, "application/json");
-                rb = rb.body(serde_json::to_vec(v).map_err(|e| ApiError::Protocol(format!("encode: {e}")))?);
+                rb = rb.body(
+                    serde_json::to_vec(v)
+                        .map_err(|e| ApiError::Protocol(format!("encode: {e}")))?,
+                );
             }
             Body::Raw(bytes, content_type) => {
                 rb = rb.header(reqwest::header::CONTENT_TYPE, content_type.clone());
@@ -433,25 +451,35 @@ impl A0Client {
         if !cookie.is_empty() {
             rb = rb.header(reqwest::header::COOKIE, cookie);
         }
-        let timeout = if mutation { self.mutation_timeout } else { self.total_timeout };
+        let timeout = if mutation {
+            self.mutation_timeout
+        } else {
+            self.total_timeout
+        };
         rb = rb.timeout(timeout);
         let result = rb.send().await;
         if self.epoch.load(Ordering::SeqCst) != epoch_before {
             return Err(ApiError::Cancelled);
         }
-        let response = result.map_err(|e| ApiError::Transport { kind: Self::transport_kind(&e), source: e })?;
+        let response = result.map_err(|e| ApiError::Transport {
+            kind: Self::transport_kind(&e),
+            source: e,
+        })?;
         {
             let mut jar = Self::lock(&self.jar);
             jar.absorb(&response, &self.origin.host);
         }
-                Ok(response)
+        Ok(response)
     }
 }
 
 impl A0Client {
     /// Stream-read the body enforcing a §9 size cap (content-length fast path
     /// plus chunk-wise enforcement for chunked transfer encoding).
-    pub(crate) async fn read_body_capped(response: reqwest::Response, cap: usize) -> Result<Vec<u8>, ApiError> {
+    pub(crate) async fn read_body_capped(
+        response: reqwest::Response,
+        cap: usize,
+    ) -> Result<Vec<u8>, ApiError> {
         if let Some(len) = response.content_length() {
             if len as usize > cap {
                 return Err(ApiError::Protocol("payloadTooLarge".to_string()));
@@ -464,7 +492,10 @@ impl A0Client {
                 Ok(Some(c)) => c,
                 Ok(None) => break,
                 Err(e) => {
-                    return Err(ApiError::Transport { kind: TransportKind::Network, source: e });
+                    return Err(ApiError::Transport {
+                        kind: TransportKind::Network,
+                        source: e,
+                    });
                 }
             };
             if out.len() + chunk.len() > cap {
@@ -482,9 +513,13 @@ impl A0Client {
     /// `retry == TransientRead` and the failure is transient (5xx of
     /// transport) — at most [`MAX_RETRIES`] times with the constant
     /// [`RETRY_TABLE`] delays scaled by `1 + jitter*0.25`.
-    pub(crate) async fn execute_json<T: DeserializeOwned>(&self, spec: RequestSpec) -> Result<T, ApiError> {
+    pub(crate) async fn execute_json<T: DeserializeOwned>(
+        &self,
+        spec: RequestSpec,
+    ) -> Result<T, ApiError> {
         let body = self.execute_json_raw(spec).await?;
-        serde_json::from_slice(&body).map_err(|_| ApiError::Protocol("incompatiblePayload".to_string()))
+        serde_json::from_slice(&body)
+            .map_err(|_| ApiError::Protocol("incompatiblePayload".to_string()))
     }
 
     /// Like [`A0Client::execute_json`] but returns raw bytes (callers that
@@ -496,8 +531,7 @@ impl A0Client {
         loop {
             // POST bodies are mutations (60 s, never retried) EXCEPT the
             // foreground poll, which is a read per §6 (30 s, retryable).
-            let mutation =
-                !matches!(spec.body, Body::None) && spec.retry == RetryPolicy::Never;
+            let mutation = !matches!(spec.body, Body::None) && spec.retry == RetryPolicy::Never;
             // §6: transient TRANSPORT failures also retry on idempotent reads
             // (same budget as the 5xx retry below); mutations fail fast.
             let response = match self.send_once(&spec, mutation).await {
@@ -530,7 +564,10 @@ impl A0Client {
                     return Err(err);
                 }
                 let transient_5xx = matches!(status, 500 | 502 | 503 | 504);
-                if spec.retry == RetryPolicy::TransientRead && transient_5xx && attempt < MAX_RETRIES {
+                if spec.retry == RetryPolicy::TransientRead
+                    && transient_5xx
+                    && attempt < MAX_RETRIES
+                {
                     let delay = jitter.backoff(attempt, &RETRY_TABLE);
                     attempt += 1;
                     tracing::warn!(attempt, ?delay, status, "transient 5xx on read; retrying");
@@ -554,7 +591,12 @@ impl A0Client {
 
     /// POST a JSON body and decode the JSON response (the standard shape of
     /// every §3 endpoint; POST = mutation → never retried, §6).
-    pub(crate) async fn post_json<T: DeserializeOwned>(&self, path_and_query: &str, payload: &Value, response_cap: usize) -> Result<T, ApiError> {
+    pub(crate) async fn post_json<T: DeserializeOwned>(
+        &self,
+        path_and_query: &str,
+        payload: &Value,
+        response_cap: usize,
+    ) -> Result<T, ApiError> {
         self.execute_json(RequestSpec {
             method: reqwest::Method::POST,
             path_and_query: path_and_query.to_string(),
@@ -569,11 +611,13 @@ impl A0Client {
     /// POST returning raw bytes with the status preserved — used by the §3.6
     /// `model_override` 403-exception (body exactly `Per-chat override is
     /// disabled` → `overrideDisabled`, session kept) and by login.
-    pub(crate) async fn execute_preserving_status(&self, spec: RequestSpec) -> Result<(u16, Option<String>, Vec<u8>), ApiError> {
+    pub(crate) async fn execute_preserving_status(
+        &self,
+        spec: RequestSpec,
+    ) -> Result<(u16, Option<String>, Vec<u8>), ApiError> {
         // Same read/mutation split as execute_json_raw: POST is a mutation
         // (60 s, never retried) unless marked TransientRead (§6 poll exception).
-        let mutation =
-            !matches!(spec.body, Body::None) && spec.retry == RetryPolicy::Never;
+        let mutation = !matches!(spec.body, Body::None) && spec.retry == RetryPolicy::Never;
         let response = self.send_once(&spec, mutation).await?;
         let status = response.status().as_u16();
         let location = response
@@ -584,7 +628,9 @@ impl A0Client {
         // 401 still clears per §1; 403 classification is left to the caller.
         if status == 401 {
             self.clear_session();
-            return Err(ApiError::Auth { kind: AuthErrorKind::RequiresLogin });
+            return Err(ApiError::Auth {
+                kind: AuthErrorKind::RequiresLogin,
+            });
         }
         let body = Self::read_body_capped(response, spec.response_cap).await?;
         Ok((status, location, body))
@@ -611,11 +657,15 @@ impl A0Client {
     fn accept_bootstrap(&self, payload: Value) -> Result<(String, String), ApiError> {
         let ok = payload.get("ok").and_then(Value::as_bool).unwrap_or(false);
         let token = payload.get("token").and_then(Value::as_str).unwrap_or("");
-        let runtime_id = payload.get("runtime_id").and_then(Value::as_str).unwrap_or("");
+        let runtime_id = payload
+            .get("runtime_id")
+            .and_then(Value::as_str)
+            .unwrap_or("");
         let valid = |s: &str| {
             !s.is_empty()
                 && s.len() <= 256
-                && s.bytes().all(|b| b.is_ascii_alphanumeric() || b == b'_' || b == b'-')
+                && s.bytes()
+                    .all(|b| b.is_ascii_alphanumeric() || b == b'_' || b == b'-')
         };
         if !ok || !valid(token) || !valid(runtime_id) {
             return Err(ApiError::Protocol("incompatiblePayload".to_string()));
@@ -688,7 +738,11 @@ impl A0Client {
         // authenticated bootstrap → requiresLogin).
         match self.csrf_token().await {
             Ok(session) => Ok(session),
-            Err(e @ ApiError::Auth { kind: AuthErrorKind::RequiresLogin }) => {
+            Err(
+                e @ ApiError::Auth {
+                    kind: AuthErrorKind::RequiresLogin,
+                },
+            ) => {
                 self.clear_session();
                 Err(e)
             }
@@ -704,7 +758,12 @@ impl A0Client {
         match self.csrf_token().await {
             Ok(session) => Ok(session),
             Err(e) => {
-                if matches!(e, ApiError::Auth { kind: AuthErrorKind::RequiresLogin }) {
+                if matches!(
+                    e,
+                    ApiError::Auth {
+                        kind: AuthErrorKind::RequiresLogin
+                    }
+                ) {
                     self.clear_session();
                 }
                 Err(e)
@@ -724,7 +783,9 @@ impl A0Client {
     /// 3. `GET /api/csrf_token` again (now with the session cookie); a login
     ///    redirect here → `invalidCredentials` (§2.1 step 4).
     pub async fn login(&self, username: &str, password: &str) -> Result<(), ApiError> {
-        let invalid = || ApiError::Auth { kind: AuthErrorKind::InvalidCredentials };
+        let invalid = || ApiError::Auth {
+            kind: AuthErrorKind::InvalidCredentials,
+        };
         // §2.1 step 1: anonymous probe with an empty jar. HTTP 200 + valid
         // bootstrap means login is DISABLED — accepted ONLY for
         // unauthenticated loopback dev origins (`HTTPClient.swift:148-154`);
@@ -733,9 +794,13 @@ impl A0Client {
             Ok(_) if self.origin.allows_debug_loopback() => return Ok(()),
             Ok(_) => {
                 self.clear_session();
-                return Err(ApiError::Auth { kind: AuthErrorKind::UnauthenticatedServer });
+                return Err(ApiError::Auth {
+                    kind: AuthErrorKind::UnauthenticatedServer,
+                });
             }
-            Err(ApiError::Auth { kind: AuthErrorKind::RequiresLogin }) => {}
+            Err(ApiError::Auth {
+                kind: AuthErrorKind::RequiresLogin,
+            }) => {}
             Err(e) => return Err(e),
         }
         let form = format!(
@@ -746,7 +811,10 @@ impl A0Client {
         let spec = RequestSpec {
             method: reqwest::Method::POST,
             path_and_query: "/login".to_string(),
-            body: Body::Raw(form.into_bytes(), "application/x-www-form-urlencoded".to_string()),
+            body: Body::Raw(
+                form.into_bytes(),
+                "application/x-www-form-urlencoded".to_string(),
+            ),
             response_cap: 64 * 1024,
             retry: RetryPolicy::Never,
             accept: None,
@@ -766,7 +834,9 @@ impl A0Client {
         // Step 4: authenticated bootstrap; RequiresLogin here is a bad login.
         match self.csrf_token().await {
             Ok(_) => Ok(()),
-            Err(ApiError::Auth { kind: AuthErrorKind::RequiresLogin }) => Err(invalid()),
+            Err(ApiError::Auth {
+                kind: AuthErrorKind::RequiresLogin,
+            }) => Err(invalid()),
             Err(e) => Err(e),
         }
     }
@@ -816,7 +886,10 @@ impl A0Client {
                     return Err(err);
                 }
                 let transient_5xx = matches!(status, 500 | 502 | 503 | 504);
-                if spec.retry == RetryPolicy::TransientRead && transient_5xx && attempt < MAX_RETRIES {
+                if spec.retry == RetryPolicy::TransientRead
+                    && transient_5xx
+                    && attempt < MAX_RETRIES
+                {
                     let delay = jitter.backoff(attempt, &RETRY_TABLE);
                     attempt += 1;
                     tokio::time::sleep(delay).await;

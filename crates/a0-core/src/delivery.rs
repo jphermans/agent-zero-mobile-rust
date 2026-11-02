@@ -150,16 +150,32 @@ mod tests {
 
     #[test]
     fn every_other_edge_is_illegal() {
-        let queued_fail = DeliveryStatus::Queued.transition_to(DeliveryStatus::Failed(DeliveryReason::Network));
-        assert!(matches!(queued_fail, Err(CoreError::IllegalTransition { .. })));
-        assert!(DeliveryStatus::Queued.transition_to(DeliveryStatus::Acked).is_err());
-        assert!(DeliveryStatus::Queued.transition_to(DeliveryStatus::Queued).is_err());
-        assert!(DeliveryStatus::Sending.transition_to(DeliveryStatus::Queued).is_err());
-        assert!(DeliveryStatus::Sending.transition_to(DeliveryStatus::Sending).is_err());
+        let queued_fail =
+            DeliveryStatus::Queued.transition_to(DeliveryStatus::Failed(DeliveryReason::Network));
+        assert!(matches!(
+            queued_fail,
+            Err(CoreError::IllegalTransition { .. })
+        ));
+        assert!(DeliveryStatus::Queued
+            .transition_to(DeliveryStatus::Acked)
+            .is_err());
+        assert!(DeliveryStatus::Queued
+            .transition_to(DeliveryStatus::Queued)
+            .is_err());
+        assert!(DeliveryStatus::Sending
+            .transition_to(DeliveryStatus::Queued)
+            .is_err());
+        assert!(DeliveryStatus::Sending
+            .transition_to(DeliveryStatus::Sending)
+            .is_err());
 
         // Terminal states: no outgoing edges at all.
-        assert!(DeliveryStatus::Acked.transition_to(DeliveryStatus::Sending).is_err());
-        assert!(DeliveryStatus::Acked.transition_to(DeliveryStatus::Acked).is_err());
+        assert!(DeliveryStatus::Acked
+            .transition_to(DeliveryStatus::Sending)
+            .is_err());
+        assert!(DeliveryStatus::Acked
+            .transition_to(DeliveryStatus::Acked)
+            .is_err());
         assert!(DeliveryStatus::Acked
             .transition_to(DeliveryStatus::Failed(DeliveryReason::Network))
             .is_err());
@@ -196,7 +212,10 @@ mod tests {
         delivery
             .transition(DeliveryStatus::Failed(DeliveryReason::Timeout))
             .unwrap();
-        assert_eq!(delivery.status, DeliveryStatus::Failed(DeliveryReason::Timeout));
+        assert_eq!(
+            delivery.status,
+            DeliveryStatus::Failed(DeliveryReason::Timeout)
+        );
         assert_eq!(delivery.status.to_string(), "failed(timeout)");
     }
 
@@ -229,7 +248,13 @@ mod tests {
             .transition_to(DeliveryStatus::Sending)
             .unwrap_err();
         let message = err.to_string();
-        assert!(message.contains("acked"), "message must name the source: {message}");
-        assert!(message.contains("sending"), "message must name the target: {message}");
+        assert!(
+            message.contains("acked"),
+            "message must name the source: {message}"
+        );
+        assert!(
+            message.contains("sending"),
+            "message must name the target: {message}"
+        );
     }
 }

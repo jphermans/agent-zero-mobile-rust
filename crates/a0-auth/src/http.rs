@@ -18,8 +18,8 @@ use std::collections::BTreeMap;
 use std::sync::Mutex;
 use std::time::Duration;
 
-use serde_json::Value;
 use reqwest::Url;
+use serde_json::Value;
 
 use crate::error::AuthError;
 use crate::session::Session;
@@ -33,7 +33,9 @@ pub struct Bootstrap {
 }
 
 fn ascii_ident(s: &str) -> bool {
-    !s.is_empty() && s.bytes().all(|b| b.is_ascii_alphanumeric() || b == b'_' || b == b'-')
+    !s.is_empty()
+        && s.bytes()
+            .all(|b| b.is_ascii_alphanumeric() || b == b'_' || b == b'-')
 }
 
 /// Parse + validate §2.2 (charset `[A-Za-z0-9_-]`, non-empty, `ok:true`).
@@ -42,7 +44,10 @@ fn ascii_ident(s: &str) -> bool {
 pub fn parse_bootstrap(payload: &Value) -> Result<Bootstrap, AuthError> {
     let ok = payload.get("ok").and_then(Value::as_bool).unwrap_or(false);
     let token = payload.get("token").and_then(Value::as_str).unwrap_or("");
-    let runtime_id = payload.get("runtime_id").and_then(Value::as_str).unwrap_or("");
+    let runtime_id = payload
+        .get("runtime_id")
+        .and_then(Value::as_str)
+        .unwrap_or("");
     if !ok || !ascii_ident(token) || !ascii_ident(runtime_id) {
         return Err(AuthError::IncompatiblePayload("bootstrap".to_string()));
     }
@@ -98,7 +103,8 @@ impl AuthOrigin {
     /// port); §1 login-redirect detection and §2.1 cross-origin rejection.
     pub fn same_origin(&self, other: &Url) -> bool {
         other.scheme() == self.url.scheme()
-            && other.host_str().map(|h| h.to_ascii_lowercase()).as_deref() == Some(self.host.as_str())
+            && other.host_str().map(|h| h.to_ascii_lowercase()).as_deref()
+                == Some(self.host.as_str())
             && other.port_or_known_default() == self.url.port_or_known_default()
     }
 }
@@ -206,7 +212,10 @@ impl AuthHttpClient {
     }
 
     pub fn held_session(&self) -> Option<Session> {
-        self.session.lock().unwrap_or_else(|p| p.into_inner()).clone()
+        self.session
+            .lock()
+            .unwrap_or_else(|p| p.into_inner())
+            .clone()
     }
 
     pub(crate) fn set_session(&self, session: Session) {
@@ -219,10 +228,13 @@ impl AuthHttpClient {
         self.cookies
             .lock()
             .unwrap_or_else(|p| p.into_inner())
-            .insert(name.to_string(), Cookie {
-                name: name.to_string(),
-                value: value.to_string(),
-            });
+            .insert(
+                name.to_string(),
+                Cookie {
+                    name: name.to_string(),
+                    value: value.to_string(),
+                },
+            );
     }
 
     pub(crate) fn session_cookie(&self) -> Option<(String, String)> {
@@ -252,7 +264,11 @@ impl AuthHttpClient {
         *self.session.lock().unwrap_or_else(|p| p.into_inner()) = None;
     }
 
-    fn classify_status(status: u16, location: Option<&str>, origin: &AuthOrigin) -> Result<(), AuthError> {
+    fn classify_status(
+        status: u16,
+        location: Option<&str>,
+        origin: &AuthOrigin,
+    ) -> Result<(), AuthError> {
         match status {
             200..=299 => Ok(()),
             401 => Err(AuthError::RequiresLogin),
@@ -299,16 +315,23 @@ impl AuthHttpClient {
             // §1 (`HTTPClient.swift:273-278`): parse Set-Cookie headers of
             // every response; keep only ours (single-origin client).
             let mut jar = self.cookies.lock().unwrap_or_else(|p| p.into_inner());
-            for value in response.headers().get_all(reqwest::header::SET_COOKIE).iter() {
+            for value in response
+                .headers()
+                .get_all(reqwest::header::SET_COOKIE)
+                .iter()
+            {
                 if let Ok(v) = value.to_str() {
                     if let Some(nv) = v.split(';').next() {
                         if let Some((name, val)) = nv.split_once('=') {
                             let name = name.trim();
                             if !name.is_empty() {
-                                jar.insert(name.to_string(), Cookie {
-                                    name: name.to_string(),
-                                    value: val.trim().to_string(),
-                                });
+                                jar.insert(
+                                    name.to_string(),
+                                    Cookie {
+                                        name: name.to_string(),
+                                        value: val.trim().to_string(),
+                                    },
+                                );
                             }
                         }
                     }
@@ -357,6 +380,8 @@ impl AuthHttpClient {
     /// without the synthetic csrf cookie).
     pub fn cookies(&self) -> Vec<(String, String)> {
         let jar = self.cookies.lock().unwrap_or_else(|p| p.into_inner());
-        jar.values().map(|c| (c.name.clone(), c.value.clone())).collect()
+        jar.values()
+            .map(|c| (c.name.clone(), c.value.clone()))
+            .collect()
     }
 }

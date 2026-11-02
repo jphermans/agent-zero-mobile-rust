@@ -78,7 +78,6 @@ impl OutboundMessage {
     }
 }
 
-
 /// Maps an API error onto a delivery failure reason (local classification;
 /// a0-core defines no API coupling by design).
 fn reason_from_api(error: &a0_api::ApiError) -> DeliveryReason {
@@ -138,11 +137,7 @@ impl ComposerService {
     /// before the request, `-> Acked` on server confirmation, `-> Failed`
     /// on any error. A transport error is terminal here — the caller may
     /// stage a fresh message, but this one is never auto-retried (§6).
-    pub async fn send(
-        &mut self,
-        client: &A0Client,
-        id: &str,
-    ) -> Result<()> {
+    pub async fn send(&mut self, client: &A0Client, id: &str) -> Result<()> {
         // FSM: Queued -> Sending.
         {
             let message = self.outbox.get_mut(id).ok_or(ChatError::UnknownMessage)?;
@@ -161,9 +156,9 @@ impl ComposerService {
         // Every branch returns a uniform outcome so the FSM always advances
         // (a queued-path upload failure must still mark the message Failed).
         let result: std::result::Result<(), a0_api::ApiError> = match attachments {
-            AttachmentPlan::None => {
-                message_async(client, chat.as_str(), &text).await.map(|_| ())
-            }
+            AttachmentPlan::None => message_async(client, chat.as_str(), &text)
+                .await
+                .map(|_| ()),
             AttachmentPlan::Direct(files) => {
                 message_async_multipart(client, chat.as_str(), &text, &files)
                     .await
@@ -171,8 +166,8 @@ impl ComposerService {
             }
             AttachmentPlan::Queued(files) => match upload_files(client, &files).await {
                 Ok(names) => {
-                    let request = MessageQueueAddRequest::new(chat.as_str(), text.clone())
-                        .attachments(names);
+                    let request =
+                        MessageQueueAddRequest::new(chat.as_str(), text.clone()).attachments(names);
                     message_queue_add(client, &request).await.map(|_| ())
                 }
                 Err(e) => Err(e),

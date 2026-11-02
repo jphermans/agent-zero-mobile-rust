@@ -24,7 +24,7 @@ pub struct Session {
     pub csrf_token: String,
     /// §2.5 `runtimeID`; names the session cookie and csrf cookie.
     pub runtime_id: String,
- /// Set on credential login; `None` after a credential-free restore (§2.3:
+    /// Set on credential login; `None` after a credential-free restore (§2.3:
     /// passwords are never persisted or reconstructed).
     pub username: Option<String>,
     /// Jar cookie snapshot `(name, value)` in §2.4 order (name-sorted),
@@ -48,7 +48,10 @@ impl std::fmt::Debug for Session {
             .field("csrf_token", &"«redacted»")
             .field("runtime_id", &self.runtime_id)
             .field("username", &self.username)
-            .field("cookies", &self.cookies.iter().map(|(n, _)| n).collect::<Vec<_>>())
+            .field(
+                "cookies",
+                &self.cookies.iter().map(|(n, _)| n).collect::<Vec<_>>(),
+            )
             .finish()
     }
 }

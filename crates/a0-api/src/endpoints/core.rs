@@ -5,7 +5,7 @@
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 
-use crate::client::{A0Client, RetryPolicy, RequestSpec, Body};
+use crate::client::{A0Client, Body, RequestSpec, RetryPolicy};
 use crate::error::ApiError;
 
 const CAP_2MIB: usize = 2 * 1024 * 1024;
@@ -122,7 +122,10 @@ pub async fn poll(client: &A0Client, request: &StateRequest) -> Result<Snapshot,
     let spec = RequestSpec {
         method: reqwest::Method::POST,
         path_and_query: "/api/poll".to_string(),
-        body: Body::Json(serde_json::to_value(request).map_err(|e| ApiError::Protocol(format!("encode: {e}")))?),
+        body: Body::Json(
+            serde_json::to_value(request)
+                .map_err(|e| ApiError::Protocol(format!("encode: {e}")))?,
+        ),
         response_cap: CAP_2MIB,
         retry: RetryPolicy::TransientRead,
         accept: None,
@@ -137,7 +140,9 @@ pub async fn poll(client: &A0Client, request: &StateRequest) -> Result<Snapshot,
 pub async fn chat_create(client: &A0Client, new_context: &str) -> Result<(), ApiError> {
     client.require_socket_session()?;
     let payload = json!({ "new_context": new_context, "current_context": "" });
-    let response: Value = client.post_json("/api/chat_create", &payload, CAP_2MIB).await?;
+    let response: Value = client
+        .post_json("/api/chat_create", &payload, CAP_2MIB)
+        .await?;
     let ok = response.get("ok").and_then(Value::as_bool).unwrap_or(false);
     let ctxid = response.get("ctxid").and_then(Value::as_str).unwrap_or("");
     if !ok || ctxid != new_context {
@@ -150,12 +155,21 @@ pub async fn chat_create(client: &A0Client, new_context: &str) -> Result<(), Api
 /// `HTTPClient.swift:223-235`): `{"context","text","message_id"}`; response
 /// must decode `{"context":"<ctx>"}` with the matching context. The multipart
 /// attachment variant lives in [`crate::upload::message_async_multipart`] (§7).
-pub async fn message_async(client: &A0Client, context: &str, text: &str) -> Result<String, ApiError> {
+pub async fn message_async(
+    client: &A0Client,
+    context: &str,
+    text: &str,
+) -> Result<String, ApiError> {
     client.require_socket_session()?;
     let message_id = client.new_request_id();
     let payload = json!({ "context": context, "text": text, "message_id": message_id });
-    let response: Value = client.post_json("/api/message_async", &payload, CAP_2MIB).await?;
-    let ctx = response.get("context").and_then(Value::as_str).unwrap_or("");
+    let response: Value = client
+        .post_json("/api/message_async", &payload, CAP_2MIB)
+        .await?;
+    let ctx = response
+        .get("context")
+        .and_then(Value::as_str)
+        .unwrap_or("");
     if ctx != context {
         return Err(ApiError::Protocol("incompatiblePayload".to_string()));
     }
@@ -170,7 +184,7 @@ pub struct MessageQueueAddRequest {
     pub text: String,
     /// Client-generated id echoed verbatim by the response.
     pub item_id: String,
- /// `uploadName`s from a prior `POST /api/upload` (§7); None = bare text.
+    /// `uploadName`s from a prior `POST /api/upload` (§7); None = bare text.
     pub attachments: Option<Vec<String>>,
 }
 
@@ -209,7 +223,10 @@ impl MessageQueueAddRequest {
 
 /// §3.1 `POST /api/message_queue_add`: response must be
 /// `{"ok":true,"item_id":"<uuid>"}` echoing the client-generated id.
-pub async fn message_queue_add(client: &A0Client, request: &MessageQueueAddRequest) -> Result<String, ApiError> {
+pub async fn message_queue_add(
+    client: &A0Client,
+    request: &MessageQueueAddRequest,
+) -> Result<String, ApiError> {
     client.require_socket_session()?;
     let item_id = if request.item_id.is_empty() {
         client.new_request_id()
@@ -218,9 +235,14 @@ pub async fn message_queue_add(client: &A0Client, request: &MessageQueueAddReque
     };
     let mut payload = request.to_payload();
     payload["item_id"] = json!(item_id);
-    let response: Value = client.post_json("/api/message_queue_add", &payload, CAP_2MIB).await?;
+    let response: Value = client
+        .post_json("/api/message_queue_add", &payload, CAP_2MIB)
+        .await?;
     let ok = response.get("ok").and_then(Value::as_bool).unwrap_or(false);
-    let echoed = response.get("item_id").and_then(Value::as_str).unwrap_or("");
+    let echoed = response
+        .get("item_id")
+        .and_then(Value::as_str)
+        .unwrap_or("");
     if !ok || echoed != item_id {
         return Err(ApiError::Protocol("incompatiblePayload".to_string()));
     }
@@ -235,7 +257,9 @@ pub async fn message_queue_add(client: &A0Client, request: &MessageQueueAddReque
 pub async fn message_queue_remove(client: &A0Client, context: &str) -> Result<i64, ApiError> {
     client.require_socket_session()?;
     let payload = json!({ "context": context });
-    let response: Value = client.post_json("/api/message_queue_remove", &payload, CAP_2MIB).await?;
+    let response: Value = client
+        .post_json("/api/message_queue_remove", &payload, CAP_2MIB)
+        .await?;
     let ok = response.get("ok").and_then(Value::as_bool).unwrap_or(false);
     let remaining = response.get("remaining").and_then(Value::as_i64);
     if !ok || remaining.is_none() {

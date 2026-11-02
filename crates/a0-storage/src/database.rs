@@ -29,7 +29,11 @@ pub struct Database {
 impl Database {
     /// Opens (creating if needed) the encrypted database at `path` and runs
     /// pending migrations.
-    pub fn open(path: impl AsRef<Path>, key_provider: &dyn KeyProvider, profile: &ServerProfileId) -> Result<Self> {
+    pub fn open(
+        path: impl AsRef<Path>,
+        key_provider: &dyn KeyProvider,
+        profile: &ServerProfileId,
+    ) -> Result<Self> {
         let key = key_provider.database_key(profile)?;
         let conn = Self::open_connection(path.as_ref(), &key)?;
         schema::migrate(&conn)?;
@@ -42,7 +46,10 @@ impl Database {
     /// In-memory database with the same key/migration semantics as
     /// [`Database::open`]: tests, previews and embedders that keep data
     /// process-local.
-    pub fn open_in_memory(key_provider: &dyn KeyProvider, profile: &ServerProfileId) -> Result<Self> {
+    pub fn open_in_memory(
+        key_provider: &dyn KeyProvider,
+        profile: &ServerProfileId,
+    ) -> Result<Self> {
         let key = key_provider.database_key(profile)?;
         let conn = Self::apply_key(Connection::open_in_memory()?, &key)?;
         schema::migrate(&conn)?;
@@ -86,14 +93,24 @@ impl Database {
     }
 
     /// Persists a draft (upsert).
-    pub fn save_draft(&self, profile: &ServerProfileId, chat: &ChatId, draft: &Draft) -> Result<()> {
+    pub fn save_draft(
+        &self,
+        profile: &ServerProfileId,
+        chat: &ChatId,
+        draft: &Draft,
+    ) -> Result<()> {
         let conn = self.conn.lock().expect("database mutex");
         conn.execute(
             "INSERT INTO drafts(profile_id, chat_id, text, updated_at_ms)
              VALUES (?1, ?2, ?3, ?4)
              ON CONFLICT(profile_id, chat_id)
              DO UPDATE SET text = excluded.text, updated_at_ms = excluded.updated_at_ms",
-            rusqlite::params![profile.as_str(), chat.as_str(), draft.body, draft.updated_at],
+            rusqlite::params![
+                profile.as_str(),
+                chat.as_str(),
+                draft.body,
+                draft.updated_at
+            ],
         )?;
         conn.execute(
             "DELETE FROM draft_attachments WHERE profile_id = ?1 AND chat_id = ?2",
@@ -146,16 +163,13 @@ impl Database {
             "SELECT local_path, mime, size_bytes FROM draft_attachments
              WHERE profile_id = ?1 AND chat_id = ?2 ORDER BY position",
         )?;
-        let rows = stmt.query_map(
-            rusqlite::params![profile.as_str(), chat.as_str()],
-            |row| {
-                Ok((
-                    row.get::<_, String>(0)?,
-                    row.get::<_, String>(1)?,
-                    row.get::<_, i64>(2)?,
-                ))
-            },
-        )?;
+        let rows = stmt.query_map(rusqlite::params![profile.as_str(), chat.as_str()], |row| {
+            Ok((
+                row.get::<_, String>(0)?,
+                row.get::<_, String>(1)?,
+                row.get::<_, i64>(2)?,
+            ))
+        })?;
         let mut out = Vec::new();
         for row in rows {
             let (path, mime, size): (String, String, i64) = row?;
@@ -193,7 +207,13 @@ impl Database {
              ON CONFLICT(profile_id, chat_id, message_no)
              DO UPDATE SET payload_json = excluded.payload_json,
                            cached_at_ms = excluded.cached_at_ms",
-            rusqlite::params![profile.as_str(), chat.as_str(), message_no, payload_json, now_ms],
+            rusqlite::params![
+                profile.as_str(),
+                chat.as_str(),
+                message_no,
+                payload_json,
+                now_ms
+            ],
         )?;
         Ok(())
     }
@@ -209,10 +229,9 @@ impl Database {
             "SELECT message_no, payload_json FROM message_cache
              WHERE profile_id = ?1 AND chat_id = ?2 ORDER BY message_no",
         )?;
-        let rows = stmt.query_map(
-            rusqlite::params![profile.as_str(), chat.as_str()],
-            |row| Ok((row.get(0)?, row.get(1)?)),
-        )?;
+        let rows = stmt.query_map(rusqlite::params![profile.as_str(), chat.as_str()], |row| {
+            Ok((row.get(0)?, row.get(1)?))
+        })?;
         let mut out = Vec::new();
         for row in rows {
             out.push(row?);
@@ -259,7 +278,10 @@ impl Database {
     /// Removes a profile and every dependent row (explicit account removal).
     pub fn delete_profile(&self, profile: &ServerProfileId) -> Result<()> {
         let conn = self.conn.lock().expect("database mutex");
-        conn.execute("DELETE FROM server_profiles WHERE id = ?1", [profile.as_str()])?;
+        conn.execute(
+            "DELETE FROM server_profiles WHERE id = ?1",
+            [profile.as_str()],
+        )?;
         Ok(())
     }
 }

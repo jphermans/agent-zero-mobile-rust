@@ -14,7 +14,18 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
-      - uses: android-actions/setup-android@v3
+      # ubuntu runners ship the Android SDK + NDK preinstalled;
+      # android-actions/setup-android@v3 fails on the obsolete 'tools'
+      # package, so locate the preinstalled NDK directly.
+      - name: Detect preinstalled Android NDK
+        run: |
+          NDK_DIR="$(ls -d "${ANDROID_HOME}/ndk/"* 2>/dev/null | sort -V | tail -1)"
+          if [ -z "${NDK_DIR}" ]; then
+            echo "No preinstalled NDK under ${ANDROID_HOME}/ndk" >&2
+            exit 1
+          fi
+          echo "ANDROID_NDK_HOME=${NDK_DIR}" >> "${GITHUB_ENV}"
+          echo "Using NDK: ${NDK_DIR}"
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: aarch64-linux-android,armv7-linux-androideabi,x86_64-linux-android
@@ -26,9 +37,7 @@ jobs:
       - name: Build Rust core + bindings
         run: ./scripts/build-android.sh
         env:
-          ANDROID_NDK_HOME: ${{ env.ANDROID_NDK_HOME || env.ANDROID_NDK_ROOT }}
+          ANDROID_NDK_HOME: ${{ env.ANDROID_NDK_HOME }}
       - name: Gradle assembleDebug
         working-directory: platforms/android
-        run: |
-          gradle wrapper --gradle-version 8.10.2
-          ./gradlew assembleDebug
+        run: ./gradlew --no-daemon assembleDebug

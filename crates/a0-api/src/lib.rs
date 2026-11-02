@@ -34,10 +34,10 @@
 #![forbid(unsafe_code)]
 
 pub mod client;
+pub(crate) mod cookies;
 pub mod endpoints;
 pub mod error;
 pub mod upload;
-pub(crate) mod cookies;
 pub(crate) mod util;
 
 pub use client::{A0Client, A0ClientBuilder, Origin, SocketSession};

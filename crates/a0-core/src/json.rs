@@ -10,7 +10,14 @@ use serde_json::Value;
 
 /// Keys whose values must be masked by [`JSONValue::redacted_debug`].
 /// Matching is ASCII case-insensitive and exact-name only, as specified.
-const SENSITIVE_KEYS: [&str; 6] = ["token", "secret", "password", "authorization", "csrf", "api_key"];
+const SENSITIVE_KEYS: [&str; 6] = [
+    "token",
+    "secret",
+    "password",
+    "authorization",
+    "csrf",
+    "api_key",
+];
 
 /// Returns `true` when the key name is in the sensitive set (case-insensitive).
 fn key_is_sensitive(key: &str) -> bool {
@@ -141,7 +148,10 @@ mod tests {
     fn get_path_resolves_objects_arrays_and_missing() {
         let value = JSONValue::new(json!({"data": {"logs": [{"no": 0}, {"no": 1}], "seq": 3}}));
         assert_eq!(value.get_path("data.seq").and_then(|v| v.as_i64()), Some(3));
-        assert_eq!(value.get_path("data.logs.1.no").and_then(|v| v.as_i64()), Some(1));
+        assert_eq!(
+            value.get_path("data.logs.1.no").and_then(|v| v.as_i64()),
+            Some(1)
+        );
         assert!(value.get_path("data.logs.9").is_none());
         assert!(value.get_path("data.missing").is_none());
         assert!(value.get_path("data.seq.deeper").is_none());
@@ -151,7 +161,10 @@ mod tests {
     #[test]
     fn as_string_and_as_i64_are_type_strict() {
         let value = JSONValue::new(json!({"s": "x", "n": 7, "f": 1.5}));
-        assert_eq!(value.get_path("s").and_then(|v| v.as_string()), Some("x".to_string()));
+        assert_eq!(
+            value.get_path("s").and_then(|v| v.as_string()),
+            Some("x".to_string())
+        );
         assert_eq!(value.get_path("n").and_then(|v| v.as_i64()), Some(7));
         assert_eq!(value.get_path("f").and_then(|v| v.as_i64()), None);
     }

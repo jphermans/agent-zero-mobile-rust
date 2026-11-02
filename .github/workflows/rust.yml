@@ -10,10 +10,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
+      # MSRV toolchain installed FIRST so the stable toolchain below becomes
+      # the default; fmt/clippy/tests run on stable, MSRV pinned via +1.85.0.
+      - name: Install MSRV toolchain (1.85.0)
+        uses: dtolnay/rust-toolchain@1.85.0
+      - name: Install stable toolchain (default)
+        uses: dtolnay/rust-toolchain@stable
         with:
           components: rustfmt, clippy
-      - uses: dtolnay/rust-toolchain@1.85.0
       - uses: Swatinem/rust-cache@v2
       - name: Format
         run: cargo fmt --all --check

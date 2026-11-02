@@ -29,13 +29,11 @@ async fn mount_login_flow(server: &MockServer) {
     Mock::given(method("GET"))
         .and(path("/api/csrf_token"))
         .and(header_regex("cookie", "session_test-runtime="))
-        .respond_with(
-            ResponseTemplate::new(200).set_body_json(json!({
-                "ok": true,
-                "token": "synthetic-csrf",
-                "runtime_id": "test-runtime",
-            })),
-        )
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+            "ok": true,
+            "token": "synthetic-csrf",
+            "runtime_id": "test-runtime",
+        })))
         .mount(server)
         .await;
     Mock::given(method("POST"))
@@ -43,7 +41,10 @@ async fn mount_login_flow(server: &MockServer) {
         .respond_with(
             ResponseTemplate::new(302)
                 .append_header("Location", "/")
-                .append_header("Set-Cookie", "session_test-runtime=synthetic-session; Path=/; HttpOnly"),
+                .append_header(
+                    "Set-Cookie",
+                    "session_test-runtime=synthetic-session; Path=/; HttpOnly",
+                ),
         )
         .mount(server)
         .await;
@@ -65,11 +66,7 @@ async fn login_s2_1_with_exact_s8_3_wire_values() {
     let store = InMemorySecretStore::new();
 
     let session = flow
-        .login(
-            LoginCredentials::new("user+name", "a&b= c"),
-            false,
-            &store,
-        )
+        .login(LoginCredentials::new("user+name", "a&b= c"), false, &store)
         .await
         .expect("login ok");
 
@@ -77,10 +74,13 @@ async fn login_s2_1_with_exact_s8_3_wire_values() {
     assert_eq!(session.csrf_token, "synthetic-csrf");
     assert_eq!(session.runtime_id, "test-runtime");
     assert_eq!(session.username.as_deref(), Some("user+name"));
-    assert_eq!(session.cookies, vec![(
-        "session_test-runtime".to_string(),
-        "synthetic-session".to_string()
-    )]);
+    assert_eq!(
+        session.cookies,
+        vec![(
+            "session_test-runtime".to_string(),
+            "synthetic-session".to_string()
+        )]
+    );
     // §2.4 order: jar cookie first, synthetic csrf cookie LAST.
     assert_eq!(
         session.cookie_header(),
@@ -89,7 +89,10 @@ async fn login_s2_1_with_exact_s8_3_wire_values() {
 
     let requests = server.received_requests().await.expect("requests");
     assert_eq!(requests.len(), 3);
-    let login_post = requests.iter().find(|r| r.url.path() == "/login").expect("login POST");
+    let login_post = requests
+        .iter()
+        .find(|r| r.url.path() == "/login")
+        .expect("login POST");
     assert_eq!(
         String::from_utf8_lossy(&login_post.body),
         "username=user%2Bname&password=a%26b%3D%20c"
@@ -128,13 +131,11 @@ async fn restore_s2_3_without_credentials() {
     Mock::given(method("GET"))
         .and(path("/api/csrf_token"))
         .and(header_regex("cookie", "session_test-runtime="))
-        .respond_with(
-            ResponseTemplate::new(200).set_body_json(json!({
-                "ok": true,
-                "token": "restored-csrf",
-                "runtime_id": "test-runtime",
-            })),
-        )
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+            "ok": true,
+            "token": "restored-csrf",
+            "runtime_id": "test-runtime",
+        })))
         .mount(&server2)
         .await;
     Mock::given(method("GET"))
@@ -149,7 +150,10 @@ async fn restore_s2_3_without_credentials() {
     let session = flow2.restore(&store).await.expect("restore ok");
 
     assert_eq!(session.csrf_token, "restored-csrf");
-    assert_eq!(session.username, None, "username is never reconstructed (§2.3)");
+    assert_eq!(
+        session.username, None,
+        "username is never reconstructed (§2.3)"
+    );
     assert_eq!(
         session.cookie_header(),
         "session_test-runtime=synthetic-session; csrf_token_test-runtime=restored-csrf"
@@ -161,13 +165,11 @@ async fn restore_s2_3_without_credentials() {
     let server3 = MockServer::start().await;
     Mock::given(method("GET"))
         .and(path("/api/csrf_token"))
-        .respond_with(
-            ResponseTemplate::new(200).set_body_json(json!({
-                "ok": true,
-                "token": "x",
-                "runtime_id": "y",
-            })),
-        )
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+            "ok": true,
+            "token": "x",
+            "runtime_id": "y",
+        })))
         .mount(&server3)
         .await;
     let flow3 = test_flow(&server3).await;
@@ -189,7 +191,10 @@ async fn refresh_s2_3_revalidates_bootstrap() {
     let refreshed = flow.refresh().await.expect("refresh ok");
     assert_eq!(refreshed.csrf_token, "synthetic-csrf");
     let requests = server.received_requests().await.expect("requests");
-    let gets = requests.iter().filter(|r| r.url.path() == "/api/csrf_token").count();
+    let gets = requests
+        .iter()
+        .filter(|r| r.url.path() == "/api/csrf_token")
+        .count();
     assert_eq!(gets, 3, "probe + post-login bootstrap + refresh");
 }
 
@@ -208,7 +213,10 @@ async fn logout_s2_3_destroys_local_state_only() {
     assert!(flow.http.held_session().is_none(), "session destroyed");
     assert!(flow.http.cookies().is_empty(), "jar wiped");
     assert!(flow.http.cookie_header().is_empty());
-    assert!(store.get(&profile()).await.expect("get").is_none(), "persisted cookie deleted");
+    assert!(
+        store.get(&profile()).await.expect("get").is_none(),
+        "persisted cookie deleted"
+    );
     // No server call happened for the logout (§2.3: local destruction only).
     let requests = server.received_requests().await.expect("requests");
     assert!(requests.iter().all(|r| r.url.path() != "/logout"));
@@ -241,7 +249,13 @@ fn saved_cookie_validation_s2_3() {
     assert!(SavedCookie::new(profile.clone(), "session_ok", "v", None).is_ok());
     assert!(SavedCookie::new(profile.clone(), "nosession", "v", None).is_err());
     assert!(SavedCookie::new(profile.clone(), "session_has space", "v", None).is_err());
-    assert!(SavedCookie::new(profile.clone(), &format!("session_{}", "x".repeat(300)), "v", None).is_err());
+    assert!(SavedCookie::new(
+        profile.clone(),
+        format!("session_{}", "x".repeat(300)),
+        "v",
+        None
+    )
+    .is_err());
     // Value rules: non-empty, ≤16384, printable ASCII w/o ';' and ','.
     assert!(SavedCookie::new(profile.clone(), "session_ok", "", None).is_err());
     assert!(SavedCookie::new(profile.clone(), "session_ok", "has;semi", None).is_err());
@@ -253,8 +267,13 @@ fn saved_cookie_validation_s2_3() {
     assert!(SavedCookie::new(profile.clone(), "session_ok", "v", Some(1)).is_err());
 
     // JSON round-trip (§2.3 record {version,profile,name,value,expires}).
-    let cookie = SavedCookie::new(profile.clone(), "session_test-runtime", "synthetic-session", None)
-        .expect("valid");
+    let cookie = SavedCookie::new(
+        profile.clone(),
+        "session_test-runtime",
+        "synthetic-session",
+        None,
+    )
+    .expect("valid");
     let json = cookie.to_json();
     let parsed = SavedCookie::from_json(&json).expect("round trip");
     assert_eq!(parsed.name, "session_test-runtime");

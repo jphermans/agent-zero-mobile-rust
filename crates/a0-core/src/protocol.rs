@@ -274,7 +274,11 @@ impl StateRequest {
         Self {
             context,
             log_from: if needs_full_sync { 0 } else { log_version },
-            notifications_from: if needs_full_sync { 0 } else { notifications_version },
+            notifications_from: if needs_full_sync {
+                0
+            } else {
+                notifications_version
+            },
             timezone: timezone.into(),
             collections_delta,
         }
@@ -401,9 +405,7 @@ impl HandshakeAck {
             .get("seq_base")
             .and_then(|v| v.as_u64())
             .ok_or_else(|| {
-                CoreError::InvalidHandshake(
-                    "ack data.seq_base must be an integer >= 0".to_string(),
-                )
+                CoreError::InvalidHandshake("ack data.seq_base must be an integer >= 0".to_string())
             })?;
 
         Ok(AckData {
@@ -440,8 +442,7 @@ pub(crate) mod fixtures {
 }"#;
 
     /// sec 8.4 poll request (`ProtocolTests.swift:11-18`).
-    pub const POLL_REQUEST: &str =
-        r#"{"context": null, "log_from": 0, "notifications_from": 0, "timezone": "UTC", "collections_delta": true}"#;
+    pub const POLL_REQUEST: &str = r#"{"context": null, "log_from": 0, "notifications_from": 0, "timezone": "UTC", "collections_delta": true}"#;
 
     /// sec 8.5 `state_request` emit (`Realtime.swift:84-85`); `ts` illustrative,
     /// `correlationId` shown with a concrete UUID placeholder value.
@@ -489,11 +490,17 @@ mod tests {
         assert_eq!(snapshot.logs.len(), 2);
         assert_eq!(snapshot.logs[0].no, 0);
         assert_eq!(snapshot.logs[0].entry_type.as_deref(), Some("user"));
-        assert_eq!(snapshot.logs[0].timestamp.as_ref().and_then(|t| t.as_i64()), Some(0));
+        assert_eq!(
+            snapshot.logs[0].timestamp.as_ref().and_then(|t| t.as_i64()),
+            Some(0)
+        );
         assert_eq!(snapshot.notifications[0].id, "synthetic-notice");
         assert!(!snapshot.notifications[0].read);
-        assert_eq!(snapshot.log_progress.as_string(), Some("Working".to_string()));
-        assert!(snapshot.contexts.as_ref().unwrap()[0].running == false);
+        assert_eq!(
+            snapshot.log_progress.as_string(),
+            Some("Working".to_string())
+        );
+        assert!(!snapshot.contexts.as_ref().unwrap()[0].running);
         assert!(snapshot.is_full());
     }
 
@@ -504,8 +511,14 @@ mod tests {
         let original: Value = serde_json::from_str(fixtures::FULL_SNAPSHOT).unwrap();
         let encoded_keys: Vec<_> = encoded.as_object().unwrap().keys().collect();
         let original_keys: Vec<_> = original.as_object().unwrap().keys().collect();
-        assert_eq!(encoded_keys, original_keys, "wire key set must be identical");
-        assert_eq!(encoded, original, "full fixture must round-trip value-exact");
+        assert_eq!(
+            encoded_keys, original_keys,
+            "wire key set must be identical"
+        );
+        assert_eq!(
+            encoded, original,
+            "full fixture must round-trip value-exact"
+        );
     }
 
     #[test]
@@ -516,14 +529,20 @@ mod tests {
         assert!(delta.tasks.is_none());
         assert!(!delta.is_full());
         assert_eq!(delta.logs.len(), 1);
-        assert_eq!(delta.logs[0].content.as_deref(), Some("Completed synthetic response"));
+        assert_eq!(
+            delta.logs[0].content.as_deref(),
+            Some("Completed synthetic response")
+        );
         assert_eq!(delta.log_version, 3);
         assert_eq!(delta.log_progress.as_string(), Some(String::new()));
         assert!(!delta.log_progress_active);
         assert!(delta.notifications[0].read);
         assert_eq!(delta.notifications_version, 2);
         let encoded: Value = serde_json::to_value(&delta).unwrap();
-        assert_eq!(encoded, delta_json, "delta must re-serialize null collections");
+        assert_eq!(
+            encoded, delta_json,
+            "delta must re-serialize null collections"
+        );
     }
 
     #[test]
@@ -549,14 +568,23 @@ mod tests {
         let expected: Value = serde_json::from_str(fixtures::POLL_REQUEST).unwrap();
         assert_eq!(encoded, expected);
         let encoded_obj = encoded.as_object().unwrap();
-        assert!(encoded_obj.contains_key("context"), "context must always be emitted");
-        assert!(!encoded_obj.contains_key("forceFull"), "forceFull must never exist");
+        assert!(
+            encoded_obj.contains_key("context"),
+            "context must always be emitted"
+        );
+        assert!(
+            !encoded_obj.contains_key("forceFull"),
+            "forceFull must never exist"
+        );
     }
 
     #[test]
     fn state_request_emit_fixture_decodes_payload() {
         let emit: Value = serde_json::from_str(fixtures::STATE_REQUEST_EMIT).unwrap();
-        assert_eq!(emit["correlationId"], "00000000-0000-4000-8000-000000000001");
+        assert_eq!(
+            emit["correlationId"],
+            "00000000-0000-4000-8000-000000000001"
+        );
         let request: StateRequest = serde_json::from_value(emit["data"].clone()).unwrap();
         assert_eq!(request.context, Some(ChatId::new("synthetic-chat")));
         assert_eq!(request.timezone, "Europe/Amsterdam");

@@ -83,8 +83,8 @@ pub fn validate_project_name(name: &str) -> Result<(), ApiError> {
 /// §3.3 HTTPS-only git URL validation for `clone` (`Projects.swift:103-108`):
 /// no userinfo/query/fragment.
 fn validate_git_url(url_text: &str) -> Result<(), ApiError> {
-    let parsed = url::Url::parse(url_text)
-        .map_err(|_| ApiError::Protocol("invalidGitUrl".to_string()))?;
+    let parsed =
+        url::Url::parse(url_text).map_err(|_| ApiError::Protocol("invalidGitUrl".to_string()))?;
     if parsed.scheme() != "https"
         || !parsed.username().is_empty()
         || parsed.password().is_some()
@@ -99,14 +99,33 @@ fn validate_git_url(url_text: &str) -> Result<(), ApiError> {
 /// §3.3 actions (`Projects.swift:89-155`).
 pub enum ProjectsAction {
     List,
-    Load { name: String },
-    Create { project: ProjectDocument },
-    Update { project: ProjectDocument },
-    Clone { project: ProjectDocument, git_token: String },
-    Delete { name: String },
-    Activate { name: String, context_id: String },
-    Deactivate { context_id: String },
-    FileStructure { name: String, settings: Option<Value> },
+    Load {
+        name: String,
+    },
+    Create {
+        project: ProjectDocument,
+    },
+    Update {
+        project: ProjectDocument,
+    },
+    Clone {
+        project: ProjectDocument,
+        git_token: String,
+    },
+    Delete {
+        name: String,
+    },
+    Activate {
+        name: String,
+        context_id: String,
+    },
+    Deactivate {
+        context_id: String,
+    },
+    FileStructure {
+        name: String,
+        settings: Option<Value>,
+    },
 }
 
 impl ProjectsAction {
@@ -128,10 +147,7 @@ impl ProjectsAction {
         let mut payload = json!({ "action": self.name() });
         match self {
             ProjectsAction::List => {}
-            ProjectsAction::Load { name }
-            | ProjectsAction::Delete { name }
-            | ProjectsAction::Activate { name, .. }
-            | ProjectsAction::FileStructure { name, .. } => {
+            ProjectsAction::Load { name } | ProjectsAction::Delete { name } => {
                 validate_project_name(name)?;
                 payload["name"] = json!(name);
             }
@@ -154,10 +170,14 @@ impl ProjectsAction {
             ProjectsAction::Deactivate { context_id } => {
                 payload["context_id"] = json!(context_id);
             }
-            ProjectsAction::Activate { context_id, .. } => {
+            ProjectsAction::Activate { name, context_id } => {
+                validate_project_name(name)?;
+                payload["name"] = json!(name);
                 payload["context_id"] = json!(context_id);
             }
-            ProjectsAction::FileStructure { settings, .. } => {
+            ProjectsAction::FileStructure { name, settings } => {
+                validate_project_name(name)?;
+                payload["name"] = json!(name);
                 if let Some(s) = settings {
                     payload["settings"] = s.clone();
                 }
@@ -173,7 +193,9 @@ impl ProjectsAction {
 async fn dispatch(client: &A0Client, action: ProjectsAction) -> Result<Value, ApiError> {
     client.require_socket_session()?;
     let payload = action.to_payload()?;
-    let response: Value = client.post_json("/api/projects", &payload, CAP_2MIB).await?;
+    let response: Value = client
+        .post_json("/api/projects", &payload, CAP_2MIB)
+        .await?;
     let ok = response.get("ok").and_then(Value::as_bool).unwrap_or(false);
     if !ok {
         return Err(ApiError::Protocol("serverRejected".to_string()));
@@ -206,7 +228,13 @@ pub async fn list(client: &A0Client) -> Result<Vec<ProjectSummary>, ApiError> {
 /// §3.3 `load`: the project document; `data.name` must equal the request
 /// (`Projects.swift:137-140`).
 pub async fn load(client: &A0Client, name: &str) -> Result<ProjectDocument, ApiError> {
-    let data = dispatch(client, ProjectsAction::Load { name: name.to_string() }).await?;
+    let data = dispatch(
+        client,
+        ProjectsAction::Load {
+            name: name.to_string(),
+        },
+    )
+    .await?;
     let project: ProjectDocument = serde_json::from_value(data)
         .map_err(|_| ApiError::Protocol("incompatiblePayload".to_string()))?;
     if project.name != name {
@@ -216,7 +244,11 @@ pub async fn load(client: &A0Client, name: &str) -> Result<ProjectDocument, ApiE
 }
 
 /// §3.3 `create` / `update`: returns the stored project document.
-pub async fn save(client: &A0Client, project: ProjectDocument, create: bool) -> Result<ProjectDocument, ApiError> {
+pub async fn save(
+    client: &A0Client,
+    project: ProjectDocument,
+    create: bool,
+) -> Result<ProjectDocument, ApiError> {
     let action = if create {
         ProjectsAction::Create { project }
     } else {
@@ -228,11 +260,18 @@ pub async fn save(client: &A0Client, project: ProjectDocument, create: bool) -> 
 
 /// §3.3 `clone`: HTTPS-only git_url required; `git_token` added to the
 /// request (`Projects.swift:103-119`).
-pub async fn clone(client: &A0Client, project: ProjectDocument, git_token: &str) -> Result<ProjectDocument, ApiError> {
-    let data = dispatch(client, ProjectsAction::Clone {
-        project,
-        git_token: git_token.to_string(),
-    })
+pub async fn clone(
+    client: &A0Client,
+    project: ProjectDocument,
+    git_token: &str,
+) -> Result<ProjectDocument, ApiError> {
+    let data = dispatch(
+        client,
+        ProjectsAction::Clone {
+            project,
+            git_token: git_token.to_string(),
+        },
+    )
     .await?;
     serde_json::from_value(data).map_err(|_| ApiError::Protocol("incompatiblePayload".to_string()))
 }
@@ -240,7 +279,13 @@ pub async fn clone(client: &A0Client, project: ProjectDocument, git_token: &str)
 /// §3.3 `delete`: `data` must be the string equal to `<n>`
 /// (`Projects.swift:146-148`).
 pub async fn delete(client: &A0Client, name: &str) -> Result<(), ApiError> {
-    let data = dispatch(client, ProjectsAction::Delete { name: name.to_string() }).await?;
+    let data = dispatch(
+        client,
+        ProjectsAction::Delete {
+            name: name.to_string(),
+        },
+    )
+    .await?;
     if data.as_str() != Some(name) {
         return Err(ApiError::Protocol("incompatiblePayload".to_string()));
     }
@@ -249,10 +294,13 @@ pub async fn delete(client: &A0Client, name: &str) -> Result<(), ApiError> {
 
 /// §3.3 `activate`: `data` must be `null` (`Projects.swift:149-151`).
 pub async fn activate(client: &A0Client, name: &str, context_id: &str) -> Result<(), ApiError> {
-    let data = dispatch(client, ProjectsAction::Activate {
-        name: name.to_string(),
-        context_id: context_id.to_string(),
-    })
+    let data = dispatch(
+        client,
+        ProjectsAction::Activate {
+            name: name.to_string(),
+            context_id: context_id.to_string(),
+        },
+    )
     .await?;
     if !data.is_null() {
         return Err(ApiError::Protocol("incompatiblePayload".to_string()));
@@ -262,7 +310,13 @@ pub async fn activate(client: &A0Client, name: &str, context_id: &str) -> Result
 
 /// §3.3 `deactivate`: `data` must be `null`.
 pub async fn deactivate(client: &A0Client, context_id: &str) -> Result<(), ApiError> {
-    let data = dispatch(client, ProjectsAction::Deactivate { context_id: context_id.to_string() }).await?;
+    let data = dispatch(
+        client,
+        ProjectsAction::Deactivate {
+            context_id: context_id.to_string(),
+        },
+    )
+    .await?;
     if !data.is_null() {
         return Err(ApiError::Protocol("incompatiblePayload".to_string()));
     }
@@ -270,11 +324,18 @@ pub async fn deactivate(client: &A0Client, context_id: &str) -> Result<(), ApiEr
 }
 
 /// §3.3 `file_structure`: `data` must be a string (`Projects.swift:152-154`).
-pub async fn file_structure(client: &A0Client, name: &str, settings: Option<Value>) -> Result<String, ApiError> {
-    let data = dispatch(client, ProjectsAction::FileStructure {
-        name: name.to_string(),
-        settings,
-    })
+pub async fn file_structure(
+    client: &A0Client,
+    name: &str,
+    settings: Option<Value>,
+) -> Result<String, ApiError> {
+    let data = dispatch(
+        client,
+        ProjectsAction::FileStructure {
+            name: name.to_string(),
+            settings,
+        },
+    )
     .await?;
     data.as_str()
         .map(|s| s.to_string())

@@ -7,7 +7,9 @@ use a0_api::client::{A0Client, Origin};
 use a0_api::endpoints::agentcontrols;
 use a0_api::endpoints::core::{self, StateRequest};
 use a0_api::error::{ApiError, AuthErrorKind};
-use a0_api::upload::{message_async_multipart, message_queue_add_with_attachments, upload_files, UploadFile};
+use a0_api::upload::{
+    message_async_multipart, message_queue_add_with_attachments, upload_files, UploadFile,
+};
 use serde_json::{json, Value};
 use wiremock::matchers::{body_json, body_string_contains, header_regex, method, path};
 use wiremock::{Mock, MockServer, Respond, ResponseTemplate};
@@ -31,13 +33,11 @@ async fn mount_login_flow(server: &MockServer) {
     Mock::given(method("GET"))
         .and(path("/api/csrf_token"))
         .and(header_regex("cookie", "session_test-runtime="))
-        .respond_with(
-            ResponseTemplate::new(200).set_body_json(json!({
-                "ok": true,
-                "token": "synthetic-csrf",
-                "runtime_id": "test-runtime",
-            })),
-        )
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+            "ok": true,
+            "token": "synthetic-csrf",
+            "runtime_id": "test-runtime",
+        })))
         .mount(server)
         .await;
     Mock::given(method("POST"))
@@ -45,7 +45,10 @@ async fn mount_login_flow(server: &MockServer) {
         .respond_with(
             ResponseTemplate::new(302)
                 .append_header("Location", "/")
-                .append_header("Set-Cookie", "session_test-runtime=synthetic-session; Path=/; HttpOnly"),
+                .append_header(
+                    "Set-Cookie",
+                    "session_test-runtime=synthetic-session; Path=/; HttpOnly",
+                ),
         )
         .mount(server)
         .await;
@@ -99,7 +102,10 @@ async fn login_handshake_shape_s8_3() {
     assert!(login_post.headers.get("x-csrf-token").is_none());
     // Origin header on every request (§1).
     assert_eq!(
-        login_post.headers.get("origin").and_then(|v| v.to_str().ok()),
+        login_post
+            .headers
+            .get("origin")
+            .and_then(|v| v.to_str().ok()),
         Some(server.uri().as_str())
     );
     // Bootstrap GET must carry the session cookie now.
@@ -134,7 +140,9 @@ async fn login_200_html_is_invalid_credentials() {
     let err = client.login("u", "p").await.unwrap_err();
     assert!(matches!(
         err,
-        ApiError::Auth { kind: AuthErrorKind::InvalidCredentials }
+        ApiError::Auth {
+            kind: AuthErrorKind::InvalidCredentials
+        }
     ));
 }
 
@@ -160,14 +168,13 @@ async fn login_cross_origin_redirect_rejected_without_resending() {
     let err = client.login("u", "p").await.unwrap_err();
     assert!(matches!(
         err,
-        ApiError::Auth { kind: AuthErrorKind::InvalidCredentials }
+        ApiError::Auth {
+            kind: AuthErrorKind::InvalidCredentials
+        }
     ));
     // Credentials were sent exactly ONCE (§2.1: never resent).
     let requests = server.received_requests().await.expect("requests");
-    let login_posts = requests
-        .iter()
-        .filter(|r| r.url.path() == "/login")
-        .count();
+    let login_posts = requests.iter().filter(|r| r.url.path() == "/login").count();
     assert_eq!(login_posts, 1);
 }
 
@@ -193,7 +200,10 @@ async fn login_disabled_loopback_dev_origin_accepted_s2_1() {
         .mount(&server)
         .await;
     let client = test_client(&server).await;
-    client.login("u", "p").await.expect("login-disabled dev origin accepted");
+    client
+        .login("u", "p")
+        .await
+        .expect("login-disabled dev origin accepted");
     // No POST /login happened.
     let requests = server.received_requests().await.expect("requests");
     assert!(requests.iter().all(|r| r.url.path() != "/login"));
@@ -240,7 +250,9 @@ async fn poll_request_and_snapshot_s8_4_s8_1() {
         .mount(&server)
         .await;
 
-    let snap = core::poll(&client, &StateRequest::new()).await.expect("poll");
+    let snap = core::poll(&client, &StateRequest::new())
+        .await
+        .expect("poll");
     assert_eq!(snap.context, "synthetic-chat");
     assert_eq!(snap.logs.len(), 2);
     assert_eq!(snap.logs[0].no, 0);
@@ -265,10 +277,7 @@ async fn poll_request_and_snapshot_s8_4_s8_1() {
         Some("synthetic-csrf")
     );
     assert_eq!(
-        poll_req
-            .headers
-            .get("cookie")
-            .and_then(|v| v.to_str().ok()),
+        poll_req.headers.get("cookie").and_then(|v| v.to_str().ok()),
         Some("session_test-runtime=synthetic-session; csrf_token_test-runtime=synthetic-csrf")
     );
 }
@@ -321,8 +330,12 @@ async fn chat_commands_s8_9() {
 
     Mock::given(method("POST"))
         .and(path("/api/chat_create"))
-        .and(body_json(json!({ "new_context": "ctx-1", "current_context": "" })))
-        .respond_with(ResponseTemplate::new(200).set_body_json(json!({ "ok": true, "ctxid": "ctx-1" })))
+        .and(body_json(
+            json!({ "new_context": "ctx-1", "current_context": "" }),
+        ))
+        .respond_with(
+            ResponseTemplate::new(200).set_body_json(json!({ "ok": true, "ctxid": "ctx-1" })),
+        )
         .mount(&server)
         .await;
     Mock::given(method("POST"))
@@ -332,8 +345,12 @@ async fn chat_commands_s8_9() {
         .mount(&server)
         .await;
 
-    core::chat_create(&client, "ctx-1").await.expect("chat_create");
-    let message_id = core::message_async(&client, "ctx-1", "hi").await.expect("message_async");
+    core::chat_create(&client, "ctx-1")
+        .await
+        .expect("chat_create");
+    let message_id = core::message_async(&client, "ctx-1", "hi")
+        .await
+        .expect("message_async");
     assert!(!message_id.is_empty());
 
     // message_async request must carry context/text/message_id (§3.1 JSON).
@@ -347,7 +364,9 @@ async fn chat_commands_s8_9() {
     assert_eq!(body["text"], "hi");
     assert_eq!(body["message_id"], json!(message_id));
     assert_eq!(
-        send.headers.get("content-type").and_then(|v| v.to_str().ok()),
+        send.headers
+            .get("content-type")
+            .and_then(|v| v.to_str().ok()),
         Some("application/json")
     );
 }
@@ -365,14 +384,20 @@ async fn queue_add_remove_s8_9_s8_10() {
         .await;
     Mock::given(method("POST"))
         .and(path("/api/message_queue_remove"))
-        .respond_with(ResponseTemplate::new(200).set_body_json(json!({ "ok": true, "remaining": 0 })))
+        .respond_with(
+            ResponseTemplate::new(200).set_body_json(json!({ "ok": true, "remaining": 0 })),
+        )
         .mount(&server)
         .await;
 
     let request = core::MessageQueueAddRequest::new("ctx-1", "hi");
-    let item_id = core::message_queue_add(&client, &request).await.expect("queue add");
+    let item_id = core::message_queue_add(&client, &request)
+        .await
+        .expect("queue add");
     assert!(!item_id.is_empty());
-    let remaining = core::message_queue_remove(&client, "ctx-1").await.expect("queue remove");
+    let remaining = core::message_queue_remove(&client, "ctx-1")
+        .await
+        .expect("queue remove");
     assert_eq!(remaining, 0);
 
     let requests = server.received_requests().await.expect("requests");
@@ -444,7 +469,10 @@ async fn upload_queued_flow_s7() {
         .and_then(|v| v.to_str().ok())
         .unwrap_or("")
         .to_string();
-    assert!(ctype.starts_with("multipart/form-data; boundary=A0-"), "boundary prefix A0-");
+    assert!(
+        ctype.starts_with("multipart/form-data; boundary=A0-"),
+        "boundary prefix A0-"
+    );
     let body = String::from_utf8_lossy(&upload.body);
     assert!(body.contains("name=\"file\"; filename=\""));
     assert!(body.contains("Content-Type: image/png"));
@@ -497,7 +525,10 @@ async fn message_async_multipart_s7() {
     assert!(body.contains("name=\"attachments\"; filename=\""));
     assert!(body.contains("Content-Type: image/webp\r\n\r\nWEBP-DATA"));
     // Exactly ONE request (mutation, never retried).
-    let sends = requests.iter().filter(|r| r.url.path() == "/api/message_async").count();
+    let sends = requests
+        .iter()
+        .filter(|r| r.url.path() == "/api/message_async")
+        .count();
     assert_eq!(sends, 1);
 }
 
@@ -539,7 +570,13 @@ async fn redirect_not_followed_generic_3xx_is_status_s1() {
 
     // Exactly ONE poll request — the redirect target was never requested.
     let requests = server.received_requests().await.expect("requests");
-    assert_eq!(requests.iter().filter(|r| r.url.path() == "/api/poll").count(), 1);
+    assert_eq!(
+        requests
+            .iter()
+            .filter(|r| r.url.path() == "/api/poll")
+            .count(),
+        1
+    );
     assert!(requests.iter().all(|r| r.url.path() != "/somewhere-else"));
     // Session is KEPT on a generic 3xx (only 401/403 clear, §1).
     assert!(client.socket_session().is_some());
@@ -562,9 +599,14 @@ async fn login_redirect_after_auth_requires_login_and_clears_s1() {
     let err = core::poll(&client, &StateRequest::new()).await.unwrap_err();
     assert!(matches!(
         err,
-        ApiError::Auth { kind: AuthErrorKind::RequiresLogin }
+        ApiError::Auth {
+            kind: AuthErrorKind::RequiresLogin
+        }
     ));
-    assert!(client.socket_session().is_none(), "session cleared after login redirect");
+    assert!(
+        client.socket_session().is_none(),
+        "session cleared after login redirect"
+    );
 }
 
 #[tokio::test]
@@ -588,12 +630,17 @@ async fn get_retry_then_success_s6() {
         .mount(&server)
         .await;
 
-    let snap = core::poll(&client, &StateRequest::new()).await.expect("retry succeeds");
+    let snap = core::poll(&client, &StateRequest::new())
+        .await
+        .expect("retry succeeds");
     assert_eq!(snap.context, "synthetic-chat");
     assert_eq!(snap.logs.len(), 1);
 
     let requests = server.received_requests().await.expect("requests");
-    let polls = requests.iter().filter(|r| r.url.path() == "/api/poll").count();
+    let polls = requests
+        .iter()
+        .filter(|r| r.url.path() == "/api/poll")
+        .count();
     assert_eq!(polls, 2, "one failed attempt + one successful retry");
 }
 
@@ -615,7 +662,10 @@ async fn mutation_never_retried_s6() {
     assert!(matches!(err, ApiError::Status { code: 500 }));
 
     let requests = server.received_requests().await.expect("requests");
-    let stops = requests.iter().filter(|r| r.url.path() == "/api/stop").count();
+    let stops = requests
+        .iter()
+        .filter(|r| r.url.path() == "/api/stop")
+        .count();
     assert_eq!(stops, 1, "mutation sent exactly once");
 }
 
@@ -630,10 +680,14 @@ async fn auth_error_classification_s1() {
         .respond_with(ResponseTemplate::new(401))
         .mount(&server)
         .await;
-    let err = agentcontrols::history_get(&client, "ctx-1").await.unwrap_err();
+    let err = agentcontrols::history_get(&client, "ctx-1")
+        .await
+        .unwrap_err();
     assert!(matches!(
         err,
-        ApiError::Auth { kind: AuthErrorKind::RequiresLogin }
+        ApiError::Auth {
+            kind: AuthErrorKind::RequiresLogin
+        }
     ));
     assert!(client.socket_session().is_none(), "401 clears the session");
     drop(client);
@@ -647,10 +701,14 @@ async fn auth_error_classification_s1() {
         .respond_with(ResponseTemplate::new(403))
         .mount(&server)
         .await;
-    let err = agentcontrols::pause(&client, "ctx-1", true).await.unwrap_err();
+    let err = agentcontrols::pause(&client, "ctx-1", true)
+        .await
+        .unwrap_err();
     assert!(matches!(
         err,
-        ApiError::Auth { kind: AuthErrorKind::CsrfRejected }
+        ApiError::Auth {
+            kind: AuthErrorKind::CsrfRejected
+        }
     ));
     assert!(client.socket_session().is_none(), "403 clears the session");
     drop(client);

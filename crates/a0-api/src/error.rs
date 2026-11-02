@@ -91,7 +91,10 @@ mod tests {
         for code in [401u16, 403, 404, 302, 499, 505] {
             assert!(!ApiError::Status { code }.is_transient(), "{code}");
         }
-        assert!(!ApiError::Auth { kind: AuthErrorKind::RequiresLogin }.is_transient());
+        assert!(!ApiError::Auth {
+            kind: AuthErrorKind::RequiresLogin
+        }
+        .is_transient());
         assert!(!ApiError::Protocol("x".to_string()).is_transient());
         assert!(!ApiError::Cancelled.is_transient());
     }

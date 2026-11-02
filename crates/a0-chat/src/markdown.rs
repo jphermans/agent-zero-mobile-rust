@@ -12,10 +12,7 @@ use pulldown_cmark::{CodeBlockKind, Event, HeadingLevel, Parser, Tag, TagEnd};
 #[derive(Debug, Clone, PartialEq)]
 pub enum Block {
     /// Heading with its level (1-6 collapsed to 1-3 for mobile).`,
-    Heading {
-        level: u8,
-        text: String,
-    },
+    Heading { level: u8, text: String },
     /// Paragraph of inline text (markdown emphasis resolved to plain text
     /// with markers preserved for styled rendering).
     Paragraph(String),
@@ -176,8 +173,22 @@ mod tests {
             .filter(|b| matches!(b, Block::ListItem { .. }))
             .collect();
         assert_eq!(items.len(), 4);
-        assert!(matches!(&items[0], Block::ListItem { ordered: false, ordinal: 0, .. }));
-        assert!(matches!(&items[2], Block::ListItem { ordered: true, ordinal: 1, .. }));
+        assert!(matches!(
+            &items[0],
+            Block::ListItem {
+                ordered: false,
+                ordinal: 0,
+                ..
+            }
+        ));
+        assert!(matches!(
+            &items[2],
+            Block::ListItem {
+                ordered: true,
+                ordinal: 1,
+                ..
+            }
+        ));
     }
 
     #[test]

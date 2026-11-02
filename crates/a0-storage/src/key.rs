@@ -78,9 +78,7 @@ mod tests {
     #[test]
     fn static_provider_roundtrips_and_debug_redacts() {
         let provider = StaticKeyProvider::new(vec![0xABu8; 32]);
-        let key = provider
-            .database_key(&ServerProfileId::new("p1"))
-            .unwrap();
+        let key = provider.database_key(&ServerProfileId::new("p1")).unwrap();
         assert_eq!(key.len(), 32);
         let rendered = format!("{provider:?}");
         assert!(!rendered.contains("abab"));

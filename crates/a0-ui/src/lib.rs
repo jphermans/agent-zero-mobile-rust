@@ -12,5 +12,7 @@
 pub mod adaptive;
 pub mod theme;
 
-pub use adaptive::{NavigationPattern, WindowSizeClass, COMPACT_MAX_WIDTH_DP, EXPANDED_MIN_WIDTH_DP};
+pub use adaptive::{
+    NavigationPattern, WindowSizeClass, COMPACT_MAX_WIDTH_DP, EXPANDED_MIN_WIDTH_DP,
+};
 pub use theme::{ThemeTokens, TYPE_SCALE_BODY, TYPE_SCALE_CAPTION, TYPE_SCALE_TITLE};

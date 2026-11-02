@@ -46,7 +46,9 @@ pub mod protocol;
 pub mod reducer;
 
 pub use delivery::{Delivery, DeliveryReason, DeliveryStatus};
-pub use draft::{Draft, DraftKey, StagedAttachment, MAX_ATTACHMENTS, MAX_FILE_BYTES, MAX_TOTAL_BYTES};
+pub use draft::{
+    Draft, DraftKey, StagedAttachment, MAX_ATTACHMENTS, MAX_FILE_BYTES, MAX_TOTAL_BYTES,
+};
 pub use error::CoreError;
 pub use ids::{ChatId, MessageId, ProjectId, ServerProfileId};
 pub use json::JSONValue;

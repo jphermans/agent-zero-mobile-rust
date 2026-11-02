@@ -69,7 +69,11 @@ pub struct StagedAttachment {
 
 impl StagedAttachment {
     /// Creates a staged attachment after validating the per-file limit.
-    pub fn new(local_path: PathBuf, mime: impl Into<String>, size_bytes: u64) -> Result<Self, CoreError> {
+    pub fn new(
+        local_path: PathBuf,
+        mime: impl Into<String>,
+        size_bytes: u64,
+    ) -> Result<Self, CoreError> {
         if size_bytes > MAX_FILE_BYTES {
             return Err(CoreError::AttachmentLimit(format!(
                 "file size {size_bytes} exceeds the per-file limit of {MAX_FILE_BYTES} bytes"
@@ -178,7 +182,11 @@ impl Draft {
     }
 
     /// Removes the attachment at `index`, restamping `updated_at`.
-    pub fn remove_attachment(&mut self, index: usize, now_ms: u64) -> Result<StagedAttachment, CoreError> {
+    pub fn remove_attachment(
+        &mut self,
+        index: usize,
+        now_ms: u64,
+    ) -> Result<StagedAttachment, CoreError> {
         if index >= self.attachments.len() {
             return Err(CoreError::AttachmentLimit(format!(
                 "attachment index {index} out of range"
@@ -237,11 +245,18 @@ mod tests {
 
     #[test]
     fn per_file_limit_is_enforced_at_construction() {
-        let err = StagedAttachment::new(PathBuf::from("/tmp/big.png"), "image/png", MAX_FILE_BYTES + 1)
-            .unwrap_err();
+        let err = StagedAttachment::new(
+            PathBuf::from("/tmp/big.png"),
+            "image/png",
+            MAX_FILE_BYTES + 1,
+        )
+        .unwrap_err();
         assert!(matches!(err, CoreError::AttachmentLimit(_)));
         // Exactly at the limit is legal.
-        assert!(StagedAttachment::new(PathBuf::from("/tmp/ok.png"), "image/png", MAX_FILE_BYTES).is_ok());
+        assert!(
+            StagedAttachment::new(PathBuf::from("/tmp/ok.png"), "image/png", MAX_FILE_BYTES)
+                .is_ok()
+        );
     }
 
     #[test]
@@ -249,11 +264,16 @@ mod tests {
         let mut draft = Draft::new(key(), 0);
         for index in 0..MAX_ATTACHMENTS {
             draft
-                .stage_attachment(attachment(&format!("/tmp/f{index}.png"), 1), 1_000 + index as u64)
+                .stage_attachment(
+                    attachment(&format!("/tmp/f{index}.png"), 1),
+                    1_000 + index as u64,
+                )
                 .expect("staging up to the limit must succeed");
         }
         assert_eq!(draft.attachments.len(), MAX_ATTACHMENTS);
-        let err = draft.stage_attachment(attachment("/tmp/f6.png", 1), 9_999).unwrap_err();
+        let err = draft
+            .stage_attachment(attachment("/tmp/f6.png", 1), 9_999)
+            .unwrap_err();
         assert!(matches!(err, CoreError::AttachmentLimit(_)));
     }
 
@@ -262,20 +282,34 @@ mod tests {
         let mut draft = Draft::new(key(), 0);
         // Two files at exactly the per-file limit are legal together
         // (10 MiB + 10 MiB == the 20 MiB per-message total).
-        draft.stage_attachment(attachment("/tmp/a.png", MAX_FILE_BYTES), 1).unwrap();
-        draft.stage_attachment(attachment("/tmp/b.png", MAX_FILE_BYTES), 2).unwrap();
+        draft
+            .stage_attachment(attachment("/tmp/a.png", MAX_FILE_BYTES), 1)
+            .unwrap();
+        draft
+            .stage_attachment(attachment("/tmp/b.png", MAX_FILE_BYTES), 2)
+            .unwrap();
         // Any further file breaches the 20 MiB total from here.
-        let err = draft.stage_attachment(attachment("/tmp/c.png", 1), 3).unwrap_err();
+        let err = draft
+            .stage_attachment(attachment("/tmp/c.png", 1), 3)
+            .unwrap_err();
         assert!(matches!(err, CoreError::AttachmentLimit(_)));
-        assert_eq!(draft.attachments.len(), 2, "rejected file must not be staged");
+        assert_eq!(
+            draft.attachments.len(),
+            2,
+            "rejected file must not be staged"
+        );
         assert_eq!(draft.updated_at, 2, "failed staging must not restamp");
     }
 
     #[test]
     fn remove_attachment_updates_staging_and_timestamp() {
         let mut draft = Draft::new(key(), 0);
-        draft.stage_attachment(attachment("/tmp/a.png", 10), 1).unwrap();
-        draft.stage_attachment(attachment("/tmp/b.png", 20), 2).unwrap();
+        draft
+            .stage_attachment(attachment("/tmp/a.png", 10), 1)
+            .unwrap();
+        draft
+            .stage_attachment(attachment("/tmp/b.png", 20), 2)
+            .unwrap();
         let removed = draft.remove_attachment(0, 3).unwrap();
         assert_eq!(removed.local_path, PathBuf::from("/tmp/a.png"));
         assert_eq!(draft.attachments.len(), 1);
@@ -301,19 +335,27 @@ mod tests {
         assert_eq!(base.chars().count(), 120);
         assert_eq!(base, "a".repeat(120));
         // Trailing dots only are stripped.
-        assert_eq!(StagedAttachment::compose_upload_name("u", "report.v2.."), "u-report.v2");
+        assert_eq!(
+            StagedAttachment::compose_upload_name("u", "report.v2.."),
+            "u-report.v2"
+        );
         // Empty basename falls back to "file".
         assert_eq!(StagedAttachment::compose_upload_name("u", ""), "u-file");
         assert_eq!(StagedAttachment::compose_upload_name("u", "dir/"), "u-file");
         // Basename is taken after the last separator.
-        assert_eq!(StagedAttachment::compose_upload_name("u", "/tmp/x/report.pdf"), "u-report.pdf");
+        assert_eq!(
+            StagedAttachment::compose_upload_name("u", "/tmp/x/report.pdf"),
+            "u-report.pdf"
+        );
     }
 
     #[test]
     fn draft_serializes_round_trip() {
         let mut draft = Draft::new(key(), 42);
         draft.set_text("body", 43);
-        draft.stage_attachment(attachment("/tmp/a.png", 7), 44).unwrap();
+        draft
+            .stage_attachment(attachment("/tmp/a.png", 7), 44)
+            .unwrap();
         let json = serde_json::to_string(&draft).unwrap();
         let back: Draft = serde_json::from_str(&json).unwrap();
         assert_eq!(back, draft);

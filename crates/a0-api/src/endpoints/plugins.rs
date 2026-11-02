@@ -8,7 +8,6 @@ use crate::client::A0Client;
 use crate::error::ApiError;
 
 const CAP_PLUGIN_MIB: usize = 8 * 1024 * 1024; // §9 `Plugins.swift:111`
-const CAP_2MIB: usize = 2 * 1024 * 1024;
 
 fn require_ok(response: Value, success_key: &str) -> Result<Value, ApiError> {
     let ok = response
@@ -56,7 +55,9 @@ fn valid_plugin_name(name: &str) -> bool {
     // §3.4 (`Plugins.swift:35-40`): `[A-Za-z0-9_-]`, max 160 chars.
     !name.is_empty()
         && name.len() <= 160
-        && name.bytes().all(|b| b.is_ascii_alphanumeric() || b == b'_' || b == b'-')
+        && name
+            .bytes()
+            .all(|b| b.is_ascii_alphanumeric() || b == b'_' || b == b'-')
 }
 
 /// §3.4 `POST /api/plugins_list` (`Plugins.swift:117-126`): request
@@ -168,15 +169,26 @@ pub struct ToggleStatus {
 }
 
 /// §3.4 `get_toggle_status` convenience wrapper.
-pub async fn get_toggle_status(client: &A0Client, plugin_name: &str) -> Result<ToggleStatus, ApiError> {
+pub async fn get_toggle_status(
+    client: &A0Client,
+    plugin_name: &str,
+) -> Result<ToggleStatus, ApiError> {
     let response = plugins_call(client, plugin_name, PluginsAction::GetToggleStatus, None).await?;
-    serde_json::from_value(response).map_err(|_| ApiError::Protocol("incompatiblePayload".to_string()))
+    serde_json::from_value(response)
+        .map_err(|_| ApiError::Protocol("incompatiblePayload".to_string()))
 }
 
 /// §3.4 `get_doc`: `content` string ≤1 MiB (`Plugins.swift:143-148`).
-pub async fn get_doc(client: &A0Client, plugin_name: &str, doc: &'static str) -> Result<String, ApiError> {
+pub async fn get_doc(
+    client: &A0Client,
+    plugin_name: &str,
+    doc: &'static str,
+) -> Result<String, ApiError> {
     let response = plugins_call(client, plugin_name, PluginsAction::GetDoc { doc }, None).await?;
-    let content = response.get("content").and_then(Value::as_str).unwrap_or("");
+    let content = response
+        .get("content")
+        .and_then(Value::as_str)
+        .unwrap_or("");
     if content.len() > 1024 * 1024 {
         return Err(ApiError::Protocol("incompatiblePayload".to_string()));
     }
@@ -225,10 +237,7 @@ impl InstallerAction {
 }
 
 /// §3.4 `POST /api/plugins/_plugin_installer/plugin_install`.
-pub async fn installer_call(
-    client: &A0Client,
-    action: InstallerAction,
-) -> Result<Value, ApiError> {
+pub async fn installer_call(client: &A0Client, action: InstallerAction) -> Result<Value, ApiError> {
     client.require_socket_session()?;
     let mut payload = json!({});
     payload["action"] = json!(action.name());
@@ -336,7 +345,10 @@ fn validate_usage_breakdown(usage: &Value, tokens: i64) -> Result<(), ApiError> 
 
 /// §3.7 `POST /api/plugins/_context_window/context_window`: request
 /// `{"context":"<ctx>"}`; response cap 64 KiB.
-pub async fn context_window(client: &A0Client, context: &str) -> Result<ContextWindowUsage, ApiError> {
+pub async fn context_window(
+    client: &A0Client,
+    context: &str,
+) -> Result<ContextWindowUsage, ApiError> {
     client.require_socket_session()?;
     let payload = json!({ "context": context });
     let response: Value = client

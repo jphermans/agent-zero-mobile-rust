@@ -87,12 +87,9 @@ impl std::fmt::Debug for ConnectContext {
 #[derive(Debug)]
 pub enum RealtimeEvent {
     /// Handshake accepted (`RealtimeEvent.handshake`).
-    Handshake {
-        epoch: String,
-        seq_base: u64,
-    },
+    Handshake { epoch: String, seq_base: u64 },
     /// `state_push` payload, buffered or live.
-    Push(StatePushData),
+    Push(Box<StatePushData>),
     /// Stage failure; the connection may stay open (ack/decode failures).
     Failed { stage: String },
     /// Transport ended; `None` on clean local disconnect.
@@ -255,15 +252,10 @@ async fn establish(context: &ConnectContext) -> Result<(WsWriter, WsReader, Open
                         .await
                         .map_err(|e| RealtimeError::Connect(e.to_string()))?;
                 }
-                Ok(EngineFrame::Message(SocketPacket::Connect { nsp, .. }))
-                    if nsp == NAMESPACE =>
-                {
+                Ok(EngineFrame::Message(SocketPacket::Connect { nsp, .. })) if nsp == NAMESPACE => {
                     return Ok((write, read, open));
                 }
-                Ok(EngineFrame::Message(SocketPacket::ConnectError {
-                    message,
-                    ..
-                })) => {
+                Ok(EngineFrame::Message(SocketPacket::ConnectError { message, .. })) => {
                     return Err(RealtimeError::NamespaceConnectTimeout(message));
                 }
                 Ok(_) => {}
@@ -357,8 +349,7 @@ async fn run_loop(
     mut command_rx: UnboundedReceiver<Command>,
     event_tx: UnboundedSender<RealtimeEvent>,
 ) {
-    let established =
-        tokio::time::timeout(config.connect_timeout, establish(&context)).await;
+    let established = tokio::time::timeout(config.connect_timeout, establish(&context)).await;
     let (mut write, mut read, open) = match established {
         Ok(Ok(ok)) => ok,
         Ok(Err(err)) => {
@@ -414,222 +405,222 @@ async fn run_loop(
             .unwrap_or_else(Instant::now);
 
         tokio::select! {
-            cmd = command_rx.recv() => {
-                match cmd {
-                    Some(Command::RequestState(request)) => {
-                        if pending.is_some() {
-                            // Reference: queuedRequest replaces any queued one.
-                            queued = Some(request);
-                        } else {
-                            send_issue(
-                                &mut write,
-                                &event_tx,
-                                &config,
-                                &mut next_ack_id,
-                                &mut pending,
-                                &mut buffer,
-                                &request,
-                            )
-                            .await;
-                        }
-                    }
-                    Some(Command::Disconnect) | None => {
-                        let _ = write.send(Message::Text(codec::encode_close())).await;
-                        let _ = write.close().await;
-                        let _ = event_tx.send(RealtimeEvent::Closed(None));
-                        return;
-                    }
-                }
-            }
-            inbound = read.next() => {
-                last_inbound = Instant::now();
-                match inbound {
-                    Some(Ok(Message::Text(text))) => {
-                        match codec::parse_frame(&text) {
-                            Ok(EngineFrame::Ping) => {
-                                if write.send(Message::Text(codec::encode_pong())).await.is_err() {
-                                    let _ = event_tx.send(RealtimeEvent::Failed {
-                                        stage: "socket-error".into(),
-                                    });
-                                    let _ = event_tx.send(RealtimeEvent::Closed(Some(
-                                        RealtimeError::TransportClosed("write failed".into()),
-                                    )));
-                                    return;
+                    cmd = command_rx.recv() => {
+                        match cmd {
+                            Some(Command::RequestState(request)) => {
+                                if pending.is_some() {
+                                    // Reference: queuedRequest replaces any queued one.
+                                    queued = Some(request);
+                                } else {
+                                    send_issue(
+                                        &mut write,
+                                        &event_tx,
+                                        &config,
+                                        &mut next_ack_id,
+                                        &mut pending,
+                                        &mut buffer,
+                                        &request,
+                                    )
+                                    .await;
                                 }
                             }
-                            Ok(EngineFrame::Pong) | Ok(EngineFrame::Open(_)) => {}
-                            Ok(EngineFrame::Close) => {
-                                let _ = event_tx.send(RealtimeEvent::Failed {
-                                    stage: "socket-disconnect".into(),
-                                });
-                                let _ = event_tx.send(RealtimeEvent::Closed(Some(
-                                    RealtimeError::TransportClosed("server close frame".into()),
-                                )));
+                            Some(Command::Disconnect) | None => {
+                                let _ = write.send(Message::Text(codec::encode_close())).await;
+                                let _ = write.close().await;
+                                let _ = event_tx.send(RealtimeEvent::Closed(None));
                                 return;
                             }
-                            Ok(EngineFrame::Message(SocketPacket::Event { nsp, data }))
-                                if nsp == NAMESPACE
-                                    && data.first().and_then(|v| v.as_str())
-                                        == Some("state_push") =>
-                            {
-                                let decoded = data
-                                    .get(1)
-                                    .and_then(|raw| {
-                                        serde_json::from_value::<StatePush>(raw.clone()).ok()
-                                    });
-                                match decoded {
-                                    Some(push) => {
-                                        if pending.is_some() {
-                                            // Reference guard (Realtime.swift:53-56):
-                                            // overflow only fails the stage; the
-                                            // connection and ack slot stay armed.
-                                            if buffer.len() >= config.push_buffer_capacity {
+                        }
+                    }
+                    inbound = read.next() => {
+                        last_inbound = Instant::now();
+                        match inbound {
+                            Some(Ok(Message::Text(text))) => {
+                                match codec::parse_frame(&text) {
+                                    Ok(EngineFrame::Ping) => {
+                                        if write.send(Message::Text(codec::encode_pong())).await.is_err() {
+                                            let _ = event_tx.send(RealtimeEvent::Failed {
+                                                stage: "socket-error".into(),
+                                            });
+                                            let _ = event_tx.send(RealtimeEvent::Closed(Some(
+                                                RealtimeError::TransportClosed("write failed".into()),
+                                            )));
+                                            return;
+                                        }
+                                    }
+                                    Ok(EngineFrame::Pong) | Ok(EngineFrame::Open(_)) => {}
+                                    Ok(EngineFrame::Close) => {
+                                        let _ = event_tx.send(RealtimeEvent::Failed {
+                                            stage: "socket-disconnect".into(),
+                                        });
+                                        let _ = event_tx.send(RealtimeEvent::Closed(Some(
+                                            RealtimeError::TransportClosed("server close frame".into()),
+                                        )));
+                                        return;
+                                    }
+                                    Ok(EngineFrame::Message(SocketPacket::Event { nsp, data }))
+                                        if nsp == NAMESPACE
+                                            && data.first().and_then(|v| v.as_str())
+                                                == Some("state_push") =>
+                                    {
+                                        let decoded = data
+                                            .get(1)
+                                            .and_then(|raw| {
+                                                serde_json::from_value::<StatePush>(raw.clone()).ok()
+                                            });
+                                        match decoded {
+                                            Some(push) => {
+                                                if pending.is_some() {
+                                                    // Reference guard (Realtime.swift:53-56):
+                                                    // overflow only fails the stage; the
+                                                    // connection and ack slot stay armed.
+                                                    if buffer.len() >= config.push_buffer_capacity {
+                                                        let _ = event_tx.send(RealtimeEvent::Failed {
+                                                            stage: "payload-or-handshake".into(),
+                                                        });
+                                                    } else {
+                                                        buffer.push(push.data);
+                                                    }
+                                                } else {
+                                                    let _ = event_tx.send(RealtimeEvent::Push(Box::new(push.data)));
+                                                }
+                                            }
+                                            None => {
                                                 let _ = event_tx.send(RealtimeEvent::Failed {
                                                     stage: "payload-or-handshake".into(),
                                                 });
-                                            } else {
-                                                buffer.push(push.data);
                                             }
-                                        } else {
-                                            let _ = event_tx.send(RealtimeEvent::Push(push.data));
                                         }
                                     }
-                                    None => {
+                                    Ok(EngineFrame::Message(SocketPacket::Event { .. })) => {
+                                        // Reference registers no other event handlers.
+                                    }
+                                    Ok(EngineFrame::Message(SocketPacket::Ack { nsp, id, data }))
+                                        if nsp == NAMESPACE
+                                            && pending.as_ref().is_some_and(|p| p.id == id) =>
+                                    {
+                                        let pending_ack = pending.take().expect("checked above");
+                                        match resolve_ack(&data, &pending_ack.correlation) {
+                                            Ok(accepted) => {
+                                                if let Some(q) = queued.take() {
+                                                    // Reference: re-issue the queued
+                                                    // request instead of finishing the
+                                                    // handshake (buffer already cleared
+        // by send_issue).
+                                                    buffer.clear();
+                                                    send_issue(
+                                                        &mut write,
+                                                        &event_tx,
+                                                        &config,
+                                                        &mut next_ack_id,
+                                                        &mut pending,
+                                                        &mut buffer,
+                                                        &q,
+                                                    )
+                                                    .await;
+                                                } else {
+                                                    let _ = event_tx.send(RealtimeEvent::Handshake {
+                                                        epoch: accepted.runtime_epoch,
+                                                        seq_base: accepted.seq_base,
+                                                    });
+                                                    for push in buffer.drain(..) {
+                                                        let _ =
+                                                            event_tx.send(RealtimeEvent::Push(Box::new(push)));
+                                                    }
+                                                }
+                                            }
+                                            Err(()) => {
+                                                buffer.clear();
+                                                let _ = event_tx.send(RealtimeEvent::Failed {
+                                                    stage: "payload-or-handshake".into(),
+                                                });
+                                            }
+                                        }
+                                    }
+                                    Ok(EngineFrame::Message(SocketPacket::Ack { .. })) => {
+                                        // Stale or unknown ack id: ignored.
+                                    }
+                                    Ok(EngineFrame::Message(SocketPacket::Disconnect { .. })) => {
+                                        let _ = event_tx.send(RealtimeEvent::Failed {
+                                            stage: "socket-disconnect".into(),
+                                        });
+                                        let _ = event_tx.send(RealtimeEvent::Closed(Some(
+                                            RealtimeError::TransportClosed(
+                                                "namespace disconnected by server".into(),
+                                            ),
+                                        )));
+                                        return;
+                                    }
+                                    Ok(EngineFrame::Message(SocketPacket::Connect { .. })) => {}
+                                    Ok(EngineFrame::Message(SocketPacket::ConnectError {
+                                        message,
+                                        ..
+                                    })) => {
+                                        let _ = event_tx.send(RealtimeEvent::Failed {
+                                            stage: "socket-error".into(),
+                                        });
+                                        let _ = event_tx.send(RealtimeEvent::Closed(Some(
+                                            RealtimeError::TransportClosed(format!(
+                                                "namespace connect error: {message}"
+                                            )),
+                                        )));
+                                        return;
+                                    }
+                                    Err(_) => {
+                                        // Decode failure keeps the connection (reference:
+                                        // invalid JSON only emits the failure stage).
                                         let _ = event_tx.send(RealtimeEvent::Failed {
                                             stage: "payload-or-handshake".into(),
                                         });
                                     }
                                 }
                             }
-                            Ok(EngineFrame::Message(SocketPacket::Event { .. })) => {
-                                // Reference registers no other event handlers.
-                            }
-                            Ok(EngineFrame::Message(SocketPacket::Ack { nsp, id, data }))
-                                if nsp == NAMESPACE
-                                    && pending.as_ref().is_some_and(|p| p.id == id) =>
-                            {
-                                let pending_ack = pending.take().expect("checked above");
-                                match resolve_ack(&data, &pending_ack.correlation) {
-                                    Ok(accepted) => {
-                                        if let Some(q) = queued.take() {
-                                            // Reference: re-issue the queued
-                                            // request instead of finishing the
-                                            // handshake (buffer already cleared
-// by send_issue).
-                                            buffer.clear();
-                                            send_issue(
-                                                &mut write,
-                                                &event_tx,
-                                                &config,
-                                                &mut next_ack_id,
-                                                &mut pending,
-                                                &mut buffer,
-                                                &q,
-                                            )
-                                            .await;
-                                        } else {
-                                            let _ = event_tx.send(RealtimeEvent::Handshake {
-                                                epoch: accepted.runtime_epoch,
-                                                seq_base: accepted.seq_base,
-                                            });
-                                            for push in buffer.drain(..) {
-                                                let _ =
-                                                    event_tx.send(RealtimeEvent::Push(push));
-                                            }
-                                        }
-                                    }
-                                    Err(()) => {
-                                        buffer.clear();
-                                        let _ = event_tx.send(RealtimeEvent::Failed {
-                                            stage: "payload-or-handshake".into(),
-                                        });
-                                    }
-                                }
-                            }
-                            Ok(EngineFrame::Message(SocketPacket::Ack { .. })) => {
-                                // Stale or unknown ack id: ignored.
-                            }
-                            Ok(EngineFrame::Message(SocketPacket::Disconnect { .. })) => {
-                                let _ = event_tx.send(RealtimeEvent::Failed {
-                                    stage: "socket-disconnect".into(),
-                                });
-                                let _ = event_tx.send(RealtimeEvent::Closed(Some(
-                                    RealtimeError::TransportClosed(
-                                        "namespace disconnected by server".into(),
-                                    ),
-                                )));
-                                return;
-                            }
-                            Ok(EngineFrame::Message(SocketPacket::Connect { .. })) => {}
-                            Ok(EngineFrame::Message(SocketPacket::ConnectError {
-                                message,
-                                ..
-                            })) => {
-                                let _ = event_tx.send(RealtimeEvent::Failed {
-                                    stage: "socket-error".into(),
-                                });
-                                let _ = event_tx.send(RealtimeEvent::Closed(Some(
-                                    RealtimeError::TransportClosed(format!(
-                                        "namespace connect error: {message}"
-                                    )),
-                                )));
-                                return;
-                            }
-                            Err(_) => {
-                                // Decode failure keeps the connection (reference:
-                                // invalid JSON only emits the failure stage).
+                            Some(Ok(Message::Binary(_))) => {
+                                // Binary socket.io packets are outside the JSON subset.
                                 let _ = event_tx.send(RealtimeEvent::Failed {
                                     stage: "payload-or-handshake".into(),
                                 });
                             }
+                            Some(Ok(Message::Close(_))) | None => {
+                                let _ = event_tx.send(RealtimeEvent::Failed {
+                                    stage: "socket-disconnect".into(),
+                                });
+                                let _ = event_tx.send(RealtimeEvent::Closed(Some(
+                                    RealtimeError::TransportClosed("connection closed".into()),
+                                )));
+                                return;
+                            }
+                            Some(Err(err)) => {
+                                let _ = event_tx.send(RealtimeEvent::Failed {
+                                    stage: "socket-error".into(),
+                                });
+                                let _ = event_tx.send(RealtimeEvent::Closed(Some(
+                                    RealtimeError::TransportClosed(err.to_string()),
+                                )));
+                                return;
+                            }
+                            Some(Ok(_)) => {
+                                // WS-level ping/pong/frames: handled by tungstenite.
+                            }
                         }
                     }
-                    Some(Ok(Message::Binary(_))) => {
-                        // Binary socket.io packets are outside the JSON subset.
+                    _ = tokio::time::sleep_until(ack_deadline), if ack_armed => {
+                        // Reference: ack timeout surfaces as the empty-ack failure
+                        // stage and keeps the connection open for a later request.
+                        pending = None;
+                        buffer.clear();
                         let _ = event_tx.send(RealtimeEvent::Failed {
                             stage: "payload-or-handshake".into(),
                         });
                     }
-                    Some(Ok(Message::Close(_))) | None => {
+                    _ = tokio::time::sleep_until(ping_deadline) => {
                         let _ = event_tx.send(RealtimeEvent::Failed {
                             stage: "socket-disconnect".into(),
                         });
-                        let _ = event_tx.send(RealtimeEvent::Closed(Some(
-                            RealtimeError::TransportClosed("connection closed".into()),
-                        )));
+                        let _ = event_tx.send(RealtimeEvent::Closed(Some(RealtimeError::PingTimeout)));
                         return;
-                    }
-                    Some(Err(err)) => {
-                        let _ = event_tx.send(RealtimeEvent::Failed {
-                            stage: "socket-error".into(),
-                        });
-                        let _ = event_tx.send(RealtimeEvent::Closed(Some(
-                            RealtimeError::TransportClosed(err.to_string()),
-                        )));
-                        return;
-                    }
-                    Some(Ok(_)) => {
-                        // WS-level ping/pong/frames: handled by tungstenite.
                     }
                 }
-            }
-            _ = tokio::time::sleep_until(ack_deadline), if ack_armed => {
-                // Reference: ack timeout surfaces as the empty-ack failure
-                // stage and keeps the connection open for a later request.
-                pending = None;
-                buffer.clear();
-                let _ = event_tx.send(RealtimeEvent::Failed {
-                    stage: "payload-or-handshake".into(),
-                });
-            }
-            _ = tokio::time::sleep_until(ping_deadline) => {
-                let _ = event_tx.send(RealtimeEvent::Failed {
-                    stage: "socket-disconnect".into(),
-                });
-                let _ = event_tx.send(RealtimeEvent::Closed(Some(RealtimeError::PingTimeout)));
-                return;
-            }
-        }
     }
 }
 

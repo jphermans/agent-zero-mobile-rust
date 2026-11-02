@@ -42,8 +42,7 @@ impl HandoffTarget {
 /// origin itself is debug loopback http — the §2.1 development exception);
 /// scheme, host and port exactly equal to the session origin's.
 pub fn validate_handoff(session_origin: &str, target: &str) -> Result<HandoffTarget> {
-    let origin = Url::parse(session_origin)
-        .map_err(|e| WorkspaceError::Url(e.to_string()))?;
+    let origin = Url::parse(session_origin).map_err(|e| WorkspaceError::Url(e.to_string()))?;
     let parsed = Url::parse(target).map_err(|e| WorkspaceError::Url(e.to_string()))?;
 
     if parsed.scheme() != origin.scheme() {
@@ -75,11 +74,8 @@ mod tests {
 
     #[test]
     fn cross_origin_host_rejected() {
-        let err = validate_handoff(
-            "https://a0.example.com",
-            "https://evil.example/workspace",
-        )
-        .unwrap_err();
+        let err = validate_handoff("https://a0.example.com", "https://evil.example/workspace")
+            .unwrap_err();
         assert!(matches!(err, WorkspaceError::CrossOrigin(_)));
     }
 

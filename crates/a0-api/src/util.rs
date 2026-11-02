@@ -64,7 +64,11 @@ pub(crate) fn new_uuid_v4() -> String {
     let hex: String = bytes.iter().map(|b| format!("{:02x}", b)).collect();
     format!(
         "{}-{}-{}-{}-{}",
-        &hex[0..8], &hex[8..12], &hex[12..16], &hex[16..20], &hex[20..32]
+        &hex[0..8],
+        &hex[8..12],
+        &hex[12..16],
+        &hex[16..20],
+        &hex[20..32]
     )
 }
 

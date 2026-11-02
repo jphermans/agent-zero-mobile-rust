@@ -71,17 +71,38 @@ mod tests {
 
     #[test]
     fn breakpoints_match_project_spec() {
-        assert_eq!(WindowSizeClass::from_width_dp(599.0), WindowSizeClass::Compact);
-        assert_eq!(WindowSizeClass::from_width_dp(600.0), WindowSizeClass::Medium);
-        assert_eq!(WindowSizeClass::from_width_dp(839.0), WindowSizeClass::Medium);
-        assert_eq!(WindowSizeClass::from_width_dp(840.0), WindowSizeClass::Expanded);
+        assert_eq!(
+            WindowSizeClass::from_width_dp(599.0),
+            WindowSizeClass::Compact
+        );
+        assert_eq!(
+            WindowSizeClass::from_width_dp(600.0),
+            WindowSizeClass::Medium
+        );
+        assert_eq!(
+            WindowSizeClass::from_width_dp(839.0),
+            WindowSizeClass::Medium
+        );
+        assert_eq!(
+            WindowSizeClass::from_width_dp(840.0),
+            WindowSizeClass::Expanded
+        );
     }
 
     #[test]
     fn navigation_patterns_per_class() {
-        assert_eq!(WindowSizeClass::Compact.navigation(), NavigationPattern::BottomBar);
-        assert_eq!(WindowSizeClass::Medium.navigation(), NavigationPattern::Rail);
-        assert_eq!(WindowSizeClass::Expanded.navigation(), NavigationPattern::Sidebar);
+        assert_eq!(
+            WindowSizeClass::Compact.navigation(),
+            NavigationPattern::BottomBar
+        );
+        assert_eq!(
+            WindowSizeClass::Medium.navigation(),
+            NavigationPattern::Rail
+        );
+        assert_eq!(
+            WindowSizeClass::Expanded.navigation(),
+            NavigationPattern::Sidebar
+        );
     }
 
     #[test]

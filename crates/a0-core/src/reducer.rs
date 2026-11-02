@@ -131,7 +131,10 @@ fn upsert_notification_by_id(
     notifications: &mut Vec<crate::protocol::NotificationEntry>,
     entry: crate::protocol::NotificationEntry,
 ) {
-    if let Some(slot) = notifications.iter_mut().find(|existing| existing.id == entry.id) {
+    if let Some(slot) = notifications
+        .iter_mut()
+        .find(|existing| existing.id == entry.id)
+    {
         *slot = entry;
     } else {
         notifications.push(entry);
@@ -411,10 +414,7 @@ impl SyncReducer {
     /// Armed reducer: the push applies only at `seq == sequence + 1` with a
     /// matching `runtime_epoch`; any other outcome sets `needs_full_sync` and
     /// yields [`Effect::RequestResync`] while leaving state untouched.
-    pub fn apply_push(
-        &mut self,
-        push: StatePush,
-    ) -> Result<(ApplyReport, Vec<Effect>), CoreError> {
+    pub fn apply_push(&mut self, push: StatePush) -> Result<(ApplyReport, Vec<Effect>), CoreError> {
         let StatePushData {
             runtime_epoch,
             seq,
@@ -565,7 +565,10 @@ mod tests {
         // Collections retained from the full snapshot (sec 8.2).
         assert!(state.contexts.is_some() && state.tasks.is_some());
         assert_eq!(state.logs.len(), 2);
-        assert_eq!(state.logs[1].content.as_deref(), Some("Completed synthetic response"));
+        assert_eq!(
+            state.logs[1].content.as_deref(),
+            Some("Completed synthetic response")
+        );
         assert_eq!(state.log_version, 3);
         assert!(state.notifications[0].read);
 
@@ -608,10 +611,19 @@ mod tests {
         let (report, effects) = reducer
             .apply_push(push("synthetic-runtime", 2, delta_snapshot()))
             .unwrap();
-        assert_eq!(report, ApplyReport::Rejected { reason: PushRejectReason::Duplicate });
+        assert_eq!(
+            report,
+            ApplyReport::Rejected {
+                reason: PushRejectReason::Duplicate
+            }
+        );
         assert_eq!(effects, vec![Effect::RequestResync]);
         assert!(reducer.needs_full_sync());
-        assert_eq!(reducer.current_snapshot(), Some(&before), "duplicate must not mutate state");
+        assert_eq!(
+            reducer.current_snapshot(),
+            Some(&before),
+            "duplicate must not mutate state"
+        );
         assert_eq!(reducer.sequence(), 2, "sequence unchanged on rejection");
     }
 
@@ -621,7 +633,12 @@ mod tests {
         let (report, effects) = reducer
             .apply_push(push("other-runtime", 2, delta_snapshot()))
             .unwrap();
-        assert_eq!(report, ApplyReport::Rejected { reason: PushRejectReason::StaleEpoch });
+        assert_eq!(
+            report,
+            ApplyReport::Rejected {
+                reason: PushRejectReason::StaleEpoch
+            }
+        );
         assert_eq!(effects, vec![Effect::RequestResync]);
         assert!(reducer.needs_full_sync());
     }
@@ -632,7 +649,12 @@ mod tests {
         let (report, effects) = reducer
             .apply_push(push("synthetic-runtime", 5, delta_snapshot()))
             .unwrap();
-        assert_eq!(report, ApplyReport::Rejected { reason: PushRejectReason::OutOfOrder });
+        assert_eq!(
+            report,
+            ApplyReport::Rejected {
+                reason: PushRejectReason::OutOfOrder
+            }
+        );
         assert_eq!(effects, vec![Effect::RequestResync]);
         assert!(reducer.needs_full_sync());
         assert_eq!(reducer.sequence(), 1);
@@ -645,7 +667,12 @@ mod tests {
             let (report, effects) = reducer
                 .apply_push(push("synthetic-runtime", seq, full_snapshot()))
                 .unwrap();
-            assert_eq!(report, ApplyReport::Buffered { pending: seq as usize });
+            assert_eq!(
+                report,
+                ApplyReport::Buffered {
+                    pending: seq as usize
+                }
+            );
             assert_eq!(effects, vec![Effect::Noop]);
         }
         assert_eq!(reducer.pending_count(), PENDING_BUFFER_CAPACITY);
@@ -702,7 +729,12 @@ mod tests {
         let (report, effects) = reducer
             .apply_push(push("synthetic-runtime", 2, reset))
             .unwrap();
-        assert_eq!(report, ApplyReport::ResyncRequired { reason: SnapshotRejectReason::GuidReset });
+        assert_eq!(
+            report,
+            ApplyReport::ResyncRequired {
+                reason: SnapshotRejectReason::GuidReset
+            }
+        );
         assert_eq!(effects, vec![Effect::RequestResync]);
         assert!(reducer.needs_full_sync());
 
@@ -712,7 +744,9 @@ mod tests {
             .unwrap();
         assert_eq!(
             report,
-            ApplyReport::ResyncRequired { reason: SnapshotRejectReason::RequiresFullSync }
+            ApplyReport::ResyncRequired {
+                reason: SnapshotRejectReason::RequiresFullSync
+            }
         );
 
         // While the gate is armed, EVERY non-full push collapses to
@@ -734,7 +768,9 @@ mod tests {
             .unwrap();
         assert_eq!(
             report,
-            ApplyReport::ResyncRequired { reason: SnapshotRejectReason::VersionRegression }
+            ApplyReport::ResyncRequired {
+                reason: SnapshotRejectReason::VersionRegression
+            }
         );
 
         // Full snapshot recovers the reducer and clears the flag.
@@ -749,7 +785,12 @@ mod tests {
         let mut reducer = armed_reducer();
         let before = reducer.current_snapshot().cloned().unwrap();
         let (report, effects) = reducer.apply_snapshot("old-attempt", full_snapshot());
-        assert_eq!(report, ApplyReport::Ignored { reason: SnapshotRejectReason::StaleGeneration });
+        assert_eq!(
+            report,
+            ApplyReport::Ignored {
+                reason: SnapshotRejectReason::StaleGeneration
+            }
+        );
         assert_eq!(effects, vec![Effect::Noop]);
         assert_eq!(reducer.current_snapshot(), Some(&before));
         assert!(!reducer.needs_full_sync());
@@ -761,7 +802,12 @@ mod tests {
         let mut other = full_snapshot();
         other.context = "other-chat".into();
         let (report, effects) = reducer.apply_snapshot("synthetic-runtime", other);
-        assert_eq!(report, ApplyReport::ResyncRequired { reason: SnapshotRejectReason::ContextMismatch });
+        assert_eq!(
+            report,
+            ApplyReport::ResyncRequired {
+                reason: SnapshotRejectReason::ContextMismatch
+            }
+        );
         assert_eq!(effects, vec![Effect::RequestResync]);
         assert!(reducer.needs_full_sync());
     }
@@ -790,7 +836,10 @@ mod tests {
         assert_eq!(reducer.epoch(), None);
         assert_eq!(reducer.sequence(), 0);
         assert!(reducer.needs_full_sync());
-        assert!(reducer.current_snapshot().is_some(), "display state must be kept");
+        assert!(
+            reducer.current_snapshot().is_some(),
+            "display state must be kept"
+        );
 
         // Derived request resets from-offsets while recovering.
         let request = reducer.state_request("UTC");
@@ -808,13 +857,15 @@ mod tests {
     fn notifications_upsert_by_id_without_duplicates() {
         let mut reducer = armed_reducer();
         let mut delta = delta_snapshot();
-        delta.notifications.push(crate::protocol::NotificationEntry {
-            id: "second-notice".into(),
-            no: 1,
-            message: "Second notice".into(),
-            read: false,
-            extra: Default::default(),
-        });
+        delta
+            .notifications
+            .push(crate::protocol::NotificationEntry {
+                id: "second-notice".into(),
+                no: 1,
+                message: "Second notice".into(),
+                read: false,
+                extra: Default::default(),
+            });
         let (report, _) = reducer
             .apply_push(push("synthetic-runtime", 2, delta))
             .unwrap();

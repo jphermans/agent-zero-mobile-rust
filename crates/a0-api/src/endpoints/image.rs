@@ -67,18 +67,19 @@ pub async fn image_get(client: &A0Client, path: &str) -> Result<(Vec<u8>, String
         retry: RetryPolicy::TransientRead,
         accept: Some(IMAGE_ACCEPT),
     };
-    let (body, content_type) = client.execute_binary(spec, |ctype| {
-        [
-            "image/png",
-            "image/jpeg",
-            "image/webp",
-            "image/gif",
-            "image/bmp",
-        ]
-        .iter()
-        .any(|allowed| ctype.starts_with(allowed))
-    })
-    .await?;
+    let (body, content_type) = client
+        .execute_binary(spec, |ctype| {
+            [
+                "image/png",
+                "image/jpeg",
+                "image/webp",
+                "image/gif",
+                "image/bmp",
+            ]
+            .iter()
+            .any(|allowed| ctype.starts_with(allowed))
+        })
+        .await?;
     if body.is_empty() {
         return Err(ApiError::Protocol("unexpectedResponse".to_string()));
     }

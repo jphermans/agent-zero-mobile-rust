@@ -1,0 +1,8 @@
+# UniFFI binding configuration for a0-platform (library mode).
+# Consumed by uniffi-bindgen via scripts/build-android.sh / scripts/build-ios.sh.
+
+[bindings.kotlin]
+package_name = "um.a0.platform"
+
+[bindings.swift]
+module_name = "A0Platform"

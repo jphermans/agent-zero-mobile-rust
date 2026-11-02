@@ -1,0 +1,5 @@
+# MSRV policy: the workspace supports rustc 1.85 (see rust.yml MSRV check).
+# When re-resolving the lockfile, prefer dependency versions compatible with
+# the active rustc instead of failing on newer rust-version requirements.
+[resolver]
+incompatible-rust-versions = "fallback"

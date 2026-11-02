@@ -70,7 +70,9 @@ impl AuthFlow {
         let session_name = session_cookie_name(&bootstrap.runtime_id);
         if !self.http.prune_to_session(&session_name) {
             // §2.2: the jar must contain `session_<runtime_id>`.
-            return Err(AuthError::IncompatiblePayload("missingSessionCookie".to_string()));
+            return Err(AuthError::IncompatiblePayload(
+                "missingSessionCookie".to_string(),
+            ));
         }
         let session = Session {
             origin: self.http.origin.to_string(),
@@ -97,7 +99,11 @@ impl AuthFlow {
         &self,
         origin_is_debug_loopback: bool,
     ) -> Result<Option<Session>, AuthError> {
-        match self.http.request(Method::GET, "/api/csrf_token", None).await {
+        match self
+            .http
+            .request(Method::GET, "/api/csrf_token", None)
+            .await
+        {
             Err(AuthError::RequiresLogin) => Ok(None), // 3xx /login redirect or 401 → continue
             Err(e) => Err(e),
             Ok(response) => {
@@ -209,7 +215,11 @@ impl AuthFlow {
     pub async fn restore(&self, store: &dyn SecretStore) -> Result<Session, AuthError> {
         let outcome = async {
             // Probe WITHOUT the restored cookie.
-            match self.http.request(Method::GET, "/api/csrf_token", None).await {
+            match self
+                .http
+                .request(Method::GET, "/api/csrf_token", None)
+                .await
+            {
                 Err(AuthError::RequiresLogin) => {}
                 Err(e) => return Err(e),
                 Ok(_) => return Err(AuthError::UnauthenticatedServer),
@@ -224,7 +234,8 @@ impl AuthFlow {
                     return Err(AuthError::RequiresLogin);
                 }
             }
-            self.http.insert_session_cookie(&saved.name, saved.value.as_str());
+            self.http
+                .insert_session_cookie(&saved.name, saved.value.as_str());
             // Authenticated bootstrap.
             self.fetch_bootstrap().await
         }

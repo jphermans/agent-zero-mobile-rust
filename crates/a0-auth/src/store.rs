@@ -74,22 +74,32 @@ impl SavedCookie {
     pub fn validate(name: &str, value: &str, expires: Option<u64>) -> Result<(), AuthError> {
         let name_valid = name.starts_with("session_")
             && name.len() <= 256
-            && name.bytes().all(|b| b.is_ascii_alphanumeric() || b == b'_' || b == b'-');
+            && name
+                .bytes()
+                .all(|b| b.is_ascii_alphanumeric() || b == b'_' || b == b'-');
         if !name_valid {
-            return Err(AuthError::IncompatiblePayload("invalidSavedCookieName".to_string()));
+            return Err(AuthError::IncompatiblePayload(
+                "invalidSavedCookieName".to_string(),
+            ));
         }
         let value_valid = !value.is_empty()
             && value.len() <= 16_384
-            && value.bytes().all(|b| (0x21..=0x7e).contains(&b) && b != b';' && b != b',');
+            && value
+                .bytes()
+                .all(|b| (0x21..=0x7e).contains(&b) && b != b';' && b != b',');
         if !value_valid {
-            return Err(AuthError::IncompatiblePayload("invalidSavedCookieValue".to_string()));
+            return Err(AuthError::IncompatiblePayload(
+                "invalidSavedCookieValue".to_string(),
+            ));
         }
         // A record that is already expired at store time is invalid to keep
         // as restorable material; expiry is re-checked on restore.
         if let Some(exp) = expires {
             if let Some(now) = now_unix() {
                 if exp <= now {
-                    return Err(AuthError::IncompatiblePayload("expiredSavedCookie".to_string()));
+                    return Err(AuthError::IncompatiblePayload(
+                        "expiredSavedCookie".to_string(),
+                    ));
                 }
             }
         }
@@ -117,9 +127,14 @@ impl SavedCookie {
     pub fn from_json(text: &str) -> Result<SavedCookie, AuthError> {
         let v: serde_json::Value = serde_json::from_str(text)
             .map_err(|e| AuthError::IncompatiblePayload(format!("savedCookieJson: {e}")))?;
-        let version = v.get("version").and_then(serde_json::Value::as_u64).unwrap_or(0) as u32;
+        let version = v
+            .get("version")
+            .and_then(serde_json::Value::as_u64)
+            .unwrap_or(0) as u32;
         if version != 1 {
-            return Err(AuthError::IncompatiblePayload("unsupportedSavedCookieVersion".to_string()));
+            return Err(AuthError::IncompatiblePayload(
+                "unsupportedSavedCookieVersion".to_string(),
+            ));
         }
         let profile = ServerProfileId(
             v.get("profile")
@@ -193,7 +208,10 @@ impl SecretStore for InMemorySecretStore {
     }
 
     async fn put(&self, cookie: SavedCookie) -> Result<(), AuthError> {
-        self.slots.lock().await.insert(cookie.profile.clone(), cookie);
+        self.slots
+            .lock()
+            .await
+            .insert(cookie.profile.clone(), cookie);
         Ok(())
     }
 

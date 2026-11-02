@@ -46,7 +46,9 @@ fn parse_options(response: Value) -> Result<Vec<OptionRow>, ApiError> {
 /// §3.5 `POST /api/agents` `{"action":"list"}` → agent profiles list.
 pub async fn list(client: &A0Client) -> Result<Vec<OptionRow>, ApiError> {
     let payload = json!({ "action": "list" });
-    let response: Value = client.post_json("/api/agents", &payload, 2 * 1024 * 1024).await?;
+    let response: Value = client
+        .post_json("/api/agents", &payload, 2 * 1024 * 1024)
+        .await?;
     parse_options(response)
 }
 
@@ -54,6 +56,8 @@ pub async fn list(client: &A0Client) -> Result<Vec<OptionRow>, ApiError> {
 /// (same parser as [`list`], `Plugins.swift:133-142`).
 pub async fn list_project_options(client: &A0Client) -> Result<Vec<OptionRow>, ApiError> {
     let payload = json!({ "action": "list_options" });
-    let response: Value = client.post_json("/api/projects", &payload, 2 * 1024 * 1024).await?;
+    let response: Value = client
+        .post_json("/api/projects", &payload, 2 * 1024 * 1024)
+        .await?;
     parse_options(response)
 }

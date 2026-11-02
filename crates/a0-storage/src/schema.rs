@@ -27,7 +27,11 @@ pub fn migrate(conn: &Connection) -> Result<()> {
             |row| {
                 let text: String = row.get(0)?;
                 text.parse::<i64>().map_err(|_| {
-                    rusqlite::Error::InvalidColumnType(0, "value".into(), rusqlite::types::Type::Text)
+                    rusqlite::Error::InvalidColumnType(
+                        0,
+                        "value".into(),
+                        rusqlite::types::Type::Text,
+                    )
                 })
             },
         )
@@ -110,17 +114,23 @@ mod tests {
         let conn = Connection::open_in_memory().unwrap();
         migrate(&conn).unwrap();
         let v: String = conn
-            .query_row("SELECT value FROM meta WHERE key='schema_version'", [], |r| r.get(0))
+            .query_row(
+                "SELECT value FROM meta WHERE key='schema_version'",
+                [],
+                |r| r.get(0),
+            )
             .unwrap();
         let v: i64 = v.parse().unwrap();
         assert_eq!(v, SCHEMA_VERSION);
-        let tables: i64 = conn.query_row(
-            "SELECT count(*) FROM sqlite_master WHERE type='table'
+        let tables: i64 = conn
+            .query_row(
+                "SELECT count(*) FROM sqlite_master WHERE type='table'
              AND name IN ('server_profiles','auth_cookies','drafts',
                           'draft_attachments','message_cache','kv','meta')",
-            [],
-            |r| r.get(0),
-        ).unwrap();
+                [],
+                |r| r.get(0),
+            )
+            .unwrap();
         assert_eq!(tables, 7);
     }
 
