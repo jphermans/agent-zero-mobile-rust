@@ -17,8 +17,7 @@ rustup target add aarch64-linux-android armv7-linux-androideabi x86_64-linux-and
 echo "==> Installing cargo-ndk"
 cargo install cargo-ndk
 
-echo "==> Installing uniffi-bindgen-cli (UniFFI 0.31.x — keep in sync with the a0-platform crate)"
-cargo install uniffi-bindgen-cli --version 0.31.0 --locked
+echo "==> uniffi-bindgen runs from the workspace: cargo run -p a0-platform --features bindgen --bin uniffi-bindgen"
 
 echo "==> Optional (macOS): XcodeGen to regenerate AgentZero.xcodeproj from project.yml"
 if command -v brew >/dev/null; then

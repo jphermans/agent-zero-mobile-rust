@@ -30,10 +30,8 @@ jobs:
         with:
           targets: aarch64-linux-android,armv7-linux-androideabi,x86_64-linux-android
       - uses: Swatinem/rust-cache@v2
-      - name: Install cargo-ndk + uniffi-bindgen
-        run: |
-          cargo install cargo-ndk
-          cargo install uniffi-bindgen-cli --version 0.31.0 --locked
+      - name: Install cargo-ndk
+        run: cargo install cargo-ndk
       - name: Build Rust core + bindings
         run: ./scripts/build-android.sh
         env:

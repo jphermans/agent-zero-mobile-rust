@@ -23,7 +23,7 @@ UniFFI 0.31 bindings). Architecture: `docs/phase1/architecture.md` (sections
 
 Prerequisites: JDK 17, Android SDK (API 35) + NDK r28+, `ANDROID_NDK_HOME`
 set, rustup stable + targets `aarch64-linux-android`, `armv7-linux-androideabi`,
-`x86_64-linux-android`, `cargo-ndk`, `uniffi-bindgen-cli` 0.31 (see
+`x86_64-linux-android`, `cargo-ndk`, the in-workspace bindgen (see
 `scripts/bootstrap.sh`).
 
 ```bash
@@ -39,7 +39,7 @@ Kotlin bindings under `A0Rust/src/main/` (see table above).
 ## Local verification — iOS
 
 Prerequisites: macOS, Xcode 16+, rustup stable + targets `aarch64-apple-ios`,
-`aarch64-apple-ios-sim`, `x86_64-apple-ios`, `uniffi-bindgen-cli` 0.31,
+`aarch64-apple-ios-sim`, `x86_64-apple-ios`, the in-workspace bindgen,
 XcodeGen (`brew install xcodegen`) for regeneration.
 
 ```bash

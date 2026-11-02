@@ -22,7 +22,7 @@ KOTLIN_OUT="$A0RUST_DIR/src/main/kotlin"
 # --- 0. Toolchain sanity ------------------------------------------------------
 command -v cargo >/dev/null || { echo "error: cargo not found (install rustup)" >&2; exit 1; }
 command -v cargo-ndk >/dev/null || { echo "error: cargo-ndk missing (see scripts/bootstrap.sh)" >&2; exit 1; }
-command -v uniffi-bindgen >/dev/null || { echo "error: uniffi-bindgen missing (see scripts/bootstrap.sh)" >&2; exit 1; }
+# uniffi-bindgen runs from this workspace: cargo run -p a0-platform --features bindgen --bin uniffi-bindgen
 : "${ANDROID_NDK_HOME:?ANDROID_NDK_HOME must point at the Android NDK (r28+ recommended)}"
 
 # 16 KB page alignment: required by Android 15+ / NDK r28+ for native libraries.
@@ -41,7 +41,7 @@ cargo ndk --platform 26 \
 #        uniffi.toml -> um.a0.platform) ------------------------------------------
 echo "==> Generating UniFFI Kotlin bindings (library mode, package um.a0.platform)"
 mkdir -p "$KOTLIN_OUT"
-uniffi-bindgen generate --library "target/aarch64-linux-android/release/liba0_platform.so" \
+cargo run --quiet -p a0-platform --features bindgen --bin uniffi-bindgen -- generate --library "target/aarch64-linux-android/release/liba0_platform.so" \
     --language kotlin --out-dir "$KOTLIN_OUT"
 
 echo "==> Done. Native libraries:"

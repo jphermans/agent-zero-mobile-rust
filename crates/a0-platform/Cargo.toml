@@ -27,7 +27,15 @@ a0-plugins = { path = "../a0-plugins" }
 a0-workspace = { path = "../a0-workspace" }
 a0-ui = { path = "../a0-ui" }
 
+# The bindgen CLI lives in this workspace (src/bin/uniffi-bindgen.rs);
+# it is built only with --features bindgen (required-features below),
+# so plain builds and tests stay dependency-light.
 [features]
 default = ["ffi"]
 ffi = ["dep:uniffi"]
 bindgen = ["uniffi/cli"]
+
+[[bin]]
+name = "uniffi-bindgen"
+path = "src/bin/uniffi-bindgen.rs"
+required-features = ["bindgen"]

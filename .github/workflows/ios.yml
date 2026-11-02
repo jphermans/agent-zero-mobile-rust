@@ -14,10 +14,8 @@ jobs:
         with:
           targets: aarch64-apple-ios,aarch64-apple-ios-sim,x86_64-apple-ios
       - uses: Swatinem/rust-cache@v2
-      - name: Install uniffi-bindgen + XcodeGen
-        run: |
-          cargo install uniffi-bindgen-cli --version 0.31.0 --locked
-          brew install xcodegen
+      - name: Install XcodeGen
+        run: brew install xcodegen
       - name: Build Rust core + bindings + xcframework
         run: ./scripts/build-ios.sh
       - name: Regenerate Xcode project

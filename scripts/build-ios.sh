@@ -24,7 +24,7 @@ SIM_X86_TRIPLE="x86_64-apple-ios"
 
 command -v cargo >/dev/null || { echo "error: cargo not found (rustup)" >&2; exit 1; }
 command -v xcodebuild >/dev/null || { echo "error: xcodebuild not found (Xcode 16+)" >&2; exit 1; }
-command -v uniffi-bindgen >/dev/null || { echo "error: uniffi-bindgen missing (see scripts/bootstrap.sh)" >&2; exit 1; }
+# uniffi-bindgen runs from this workspace: cargo run -p a0-platform --features bindgen --bin uniffi-bindgen
 
 export IPHONEOS_DEPLOYMENT_TARGET=17.0
 cd "$REPO_ROOT"
@@ -52,7 +52,7 @@ lipo -create -output "$SIM_FAT" "$SIM_ARM_LIB" "$SIM_X86_LIB"
 # target exposes the A0Platform Swift module to the app.
 echo "==> Generating UniFFI Swift bindings (library mode -> A0Platform.swift)"
 mkdir -p "$RUST_BRIDGE/Sources/A0Platform"
-uniffi-bindgen generate \
+cargo run --quiet -p a0-platform --features bindgen --bin uniffi-bindgen -- generate \
     --library "$DEVICE_LIB" \
     --language swift \
     --out-dir "$IOS_OUT/swift"
