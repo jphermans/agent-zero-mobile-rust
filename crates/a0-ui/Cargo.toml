@@ -1,0 +1,15 @@
+[package]
+name = "a0-ui"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version = "1.85"
+
+[dependencies]
+tokio = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+a0-core = { path = "../a0-core" }
+a0-chat = { path = "../a0-chat" }

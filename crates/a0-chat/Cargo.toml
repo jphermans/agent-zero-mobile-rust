@@ -1,0 +1,25 @@
+[package]
+name = "a0-chat"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version = "1.85"
+
+[dependencies]
+tokio = { workspace = true }
+futures = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+uuid = { version = "1", features = ["v4"] }
+pulldown-cmark = { version = "0.13", default-features = false }
+syntect = { version = "5", default-features = false, features = ["default-fancy"] }
+a0-core = { path = "../a0-core" }
+a0-api = { path = "../a0-api" }
+a0-auth = { path = "../a0-auth" }
+a0-storage = { path = "../a0-storage" }
+a0-realtime = { path = "../a0-realtime" }
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["rt-multi-thread", "macros"] }

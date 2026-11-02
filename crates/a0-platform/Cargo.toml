@@ -1,0 +1,27 @@
+[package]
+name = "a0-platform"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version = "1.85"
+
+[dependencies]
+tokio = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+uniffi = { version = "0.31", optional = true }
+a0-core = { path = "../a0-core" }
+a0-api = { path = "../a0-api" }
+a0-auth = { path = "../a0-auth" }
+a0-realtime = { path = "../a0-realtime" }
+a0-storage = { path = "../a0-storage" }
+a0-chat = { path = "../a0-chat" }
+a0-projects = { path = "../a0-projects" }
+a0-plugins = { path = "../a0-plugins" }
+a0-workspace = { path = "../a0-workspace" }
+a0-ui = { path = "../a0-ui" }
+
+[features]
+default = ["ffi"]
+ffi = ["dep:uniffi"]
+bindgen = ["uniffi/cli"]

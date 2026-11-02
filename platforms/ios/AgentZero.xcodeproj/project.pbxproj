@@ -1,0 +1,368 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		CAFE00000000000000000001 /* AgentZeroApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = FACE00000000000000000001 /* AgentZeroApp.swift */; };
+		CAFE00000000000000000002 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FACE00000000000000000002 /* RootView.swift */; };
+		CAFE00000000000000000003 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FACE00000000000000000003 /* ContentView.swift */; };
+		CAFE00000000000000000004 /* ChatListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FACE00000000000000000004 /* ChatListView.swift */; };
+		CAFE00000000000000000005 /* ChatView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FACE00000000000000000005 /* ChatView.swift */; };
+		CAFE00000000000000000006 /* MessageBubble.swift in Sources */ = {isa = PBXBuildFile; fileRef = FACE00000000000000000006 /* MessageBubble.swift */; };
+		CAFE00000000000000000007 /* ComposerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FACE00000000000000000007 /* ComposerView.swift */; };
+		CAFE00000000000000000008 /* ConnectionIndicator.swift in Sources */ = {isa = PBXBuildFile; fileRef = FACE00000000000000000008 /* ConnectionIndicator.swift */; };
+		CAFE00000000000000000009 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FACE00000000000000000009 /* SettingsView.swift */; };
+		CAFE00000000000000000010 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FACE00000000000000000010 /* OnboardingView.swift */; };
+		CAFE00000000000000000011 /* RustBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = FACE00000000000000000011 /* RustBridge.swift */; };
+		CAFE00000000000000000012 /* KeychainStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = FACE00000000000000000012 /* KeychainStore.swift */; };
+		CAFE00000000000000000013 /* Layout.swift in Sources */ = {isa = PBXBuildFile; fileRef = FACE00000000000000000013 /* Layout.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		FACE00000000000000000001 /* AgentZeroApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AgentZeroApp.swift; sourceTree = "<group>"; };
+		FACE00000000000000000002 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
+		FACE00000000000000000003 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		FACE00000000000000000004 /* ChatListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatListView.swift; sourceTree = "<group>"; };
+		FACE00000000000000000005 /* ChatView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatView.swift; sourceTree = "<group>"; };
+		FACE00000000000000000006 /* MessageBubble.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessageBubble.swift; sourceTree = "<group>"; };
+		FACE00000000000000000007 /* ComposerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComposerView.swift; sourceTree = "<group>"; };
+		FACE00000000000000000008 /* ConnectionIndicator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConnectionIndicator.swift; sourceTree = "<group>"; };
+		FACE00000000000000000009 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		FACE00000000000000000010 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
+		FACE00000000000000000011 /* RustBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RustBridge.swift; sourceTree = "<group>"; };
+		FACE00000000000000000012 /* KeychainStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainStore.swift; sourceTree = "<group>"; };
+		FACE00000000000000000013 /* Layout.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Layout.swift; sourceTree = "<group>"; };
+		FACE00000000000000000099 /* AgentZero.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = AgentZero.app; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		BEEF00000000000000000003 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				B0BA00000000000000000002 /* RustBridge */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		D00D00000000000000000001 /* AgentZero */ = {
+			isa = PBXGroup;
+			children = (
+				D00D00000000000000000002 /* Sources */,
+				D00D00000000000000000005 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		D00D00000000000000000002 /* Sources */ = {
+			isa = PBXGroup;
+			children = (
+				FACE00000000000000000001 /* AgentZeroApp.swift */,
+				FACE00000000000000000002 /* RootView.swift */,
+				FACE00000000000000000003 /* ContentView.swift */,
+				FACE00000000000000000004 /* ChatListView.swift */,
+				FACE00000000000000000005 /* ChatView.swift */,
+				FACE00000000000000000006 /* MessageBubble.swift */,
+				FACE00000000000000000007 /* ComposerView.swift */,
+				FACE00000000000000000008 /* ConnectionIndicator.swift */,
+				FACE00000000000000000009 /* SettingsView.swift */,
+				FACE00000000000000000010 /* OnboardingView.swift */,
+				D00D00000000000000000003 /* Services */,
+				D00D00000000000000000004 /* Views */,
+			);
+			path = Sources;
+			sourceTree = "<group>";
+		};
+		D00D00000000000000000003 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				FACE00000000000000000011 /* RustBridge.swift */,
+				FACE00000000000000000012 /* KeychainStore.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+		D00D00000000000000000004 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				FACE00000000000000000013 /* Layout.swift */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		D00D00000000000000000005 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				FACE00000000000000000099 /* AgentZero.app */,
+			);
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+/* Begin PBXResourcesBuildPhase section */
+		BEEF00000000000000000004 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		BEEF00000000000000000001 /* Build Rust Core */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			name = "Build Rust Core";
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/bash;
+			shellScript = "set -e\n\"${SRCROOT}/../../scripts/build-ios.sh\"\n";
+		};
+/* End PBXShellScriptBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		BEEF00000000000000000002 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				CAFE00000000000000000001 /* AgentZeroApp.swift in Sources */,
+				CAFE00000000000000000002 /* RootView.swift in Sources */,
+				CAFE00000000000000000003 /* ContentView.swift in Sources */,
+				CAFE00000000000000000004 /* ChatListView.swift in Sources */,
+				CAFE00000000000000000005 /* ChatView.swift in Sources */,
+				CAFE00000000000000000006 /* MessageBubble.swift in Sources */,
+				CAFE00000000000000000007 /* ComposerView.swift in Sources */,
+				CAFE00000000000000000008 /* ConnectionIndicator.swift in Sources */,
+				CAFE00000000000000000009 /* SettingsView.swift in Sources */,
+				CAFE00000000000000000010 /* OnboardingView.swift in Sources */,
+				CAFE00000000000000000011 /* RustBridge.swift in Sources */,
+				CAFE00000000000000000012 /* KeychainStore.swift in Sources */,
+				CAFE00000000000000000013 /* Layout.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXNativeTarget section */
+		50DA00000000000000000001 /* AgentZero */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 1DEA00000000000000000002 /* Build configuration list for PBXNativeTarget "AgentZero" */;
+			buildPhases = (
+				BEEF00000000000000000001 /* Build Rust Core */,
+				BEEF00000000000000000002 /* Sources */,
+				BEEF00000000000000000003 /* Frameworks */,
+				BEEF00000000000000000004 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = AgentZero;
+			packageProductDependencies = (
+				B0BA00000000000000000002 /* RustBridge */,
+			);
+			productName = AgentZero;
+			productReference = FACE00000000000000000099 /* AgentZero.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin XCBuildConfiguration section */
+		F00D00000000000000000001 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MARKETING_VERSION = 0.1.0;
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_VERSION = 5.10;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = "DEBUG=1 $(inherited)";
+				ONLY_ACTIVE_ARCH = YES;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		F00D00000000000000000002 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MARKETING_VERSION = 0.1.0;
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_VERSION = 5.10;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				SWIFT_COMPILATION_MODE = "wholemodule";
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		F00D00000000000000000003 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				ENABLE_PREVIEWS = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSCameraUsageDescription = "Agent Zero uses the camera to capture photos and scan QR codes for server onboarding.";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Agent Zero uses the microphone for voice input to chat with your local agent.";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Agent Zero accesses your photo library to attach images to chat messages.";
+				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "Agent Zero uses speech recognition for on-device voice chat input.";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.jphermans.agentzeromobile;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.10;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				ONLY_ACTIVE_ARCH = YES;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		F00D00000000000000000004 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				ENABLE_PREVIEWS = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSCameraUsageDescription = "Agent Zero uses the camera to capture photos and scan QR codes for server onboarding.";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Agent Zero uses the microphone for voice input to chat with your local agent.";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Agent Zero accesses your photo library to attach images to chat messages.";
+				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "Agent Zero uses speech recognition for on-device voice chat input.";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.jphermans.agentzeromobile;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.10;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				SWIFT_COMPILATION_MODE = "wholemodule";
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		1DEA00000000000000000001 /* Build configuration list for PBXProject "AgentZero" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				F00D00000000000000000001 /* Debug */,
+				F00D00000000000000000002 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		1DEA00000000000000000002 /* Build configuration list for PBXNativeTarget "AgentZero" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				F00D00000000000000000003 /* Debug */,
+				F00D00000000000000000004 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		B0BA00000000000000000001 /* XCLocalSwiftPackageReference "RustBridge" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = RustBridge;
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		B0BA00000000000000000002 /* RustBridge */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = B0BA00000000000000000001 /* XCLocalSwiftPackageReference "RustBridge" */;
+			productName = RustBridge;
+		};
+/* End XCSwiftPackageProductDependency section */
+
+/* Begin PBXProject section */
+	A0DE00000000000000000001 /* Project object */ = {
+		isa = PBXProject;
+		attributes = {
+			BuildIndependentTargetsInParallel = 1;
+			LastSwiftUpdateCheck = 1600;
+			LastUpgradeCheck = 1600;
+			TargetAttributes = {
+				50DA00000000000000000001 = {
+					CreatedOnToolsVersion = 16.0;
+				};
+			};
+		};
+		buildConfigurationList = 1DEA00000000000000000001 /* Build configuration list for PBXProject "AgentZero" */;
+		compatibilityVersion = "Xcode 14.0";
+		developmentRegion = en;
+		hasScannedForEncodings = 0;
+		knownRegions = (
+			en,
+			Base,
+		);
+		mainGroup = D00D00000000000000000001 /* AgentZero */;
+		packageReferences = (
+			B0BA00000000000000000001 /* XCLocalSwiftPackageReference "RustBridge" */,
+		);
+		productRefGroup = D00D00000000000000000005 /* Products */;
+		projectDirPath = "";
+		projectRoot = "";
+		targets = (
+			50DA00000000000000000001 /* AgentZero */,
+		);
+	};
+/* End PBXProject section */
+
+	};
+	rootObject = A0DE00000000000000000001 /* Project object */;
+}

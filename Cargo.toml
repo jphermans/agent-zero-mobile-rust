@@ -1,0 +1,29 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/a0-core",
+    "crates/a0-api",
+    "crates/a0-auth",
+    "crates/a0-realtime",
+    "crates/a0-storage",
+    "crates/a0-chat",
+    "crates/a0-projects",
+    "crates/a0-plugins",
+    "crates/a0-workspace",
+    "crates/a0-ui",
+    "crates/a0-platform",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+repository = "https://github.com/jphermans/agent-zero-mobile-rust"
+
+[workspace.dependencies]
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "sync", "time", "fs"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "2"
+tracing = "0.1"
+futures = "0.3"

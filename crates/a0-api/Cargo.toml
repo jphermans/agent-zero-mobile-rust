@@ -1,0 +1,22 @@
+[package]
+name = "a0-api"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version = "1.85"
+
+[dependencies]
+reqwest = { version = "0.13", default-features = false, features = ["rustls", "rustls-native-certs", "json", "cookies", "multipart", "socks"] }
+tokio = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+futures = { workspace = true }
+url = "2"
+
+[dev-dependencies]
+# Offline HTTP fixtures: wiremock 0.6 chosen over httpmock 0.7 — async-native and
+# Scenario support gives exact ordered-response control for retry/mutation tests.
+wiremock = "0.6"
+tokio = { workspace = true, features = ["rt-multi-thread", "macros"] }

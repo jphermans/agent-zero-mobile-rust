@@ -1,0 +1,22 @@
+[package]
+name = "a0-auth"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version = "1.85"
+
+[dependencies]
+reqwest = { version = "0.13", default-features = false, features = ["rustls", "rustls-native-certs", "json", "cookies", "multipart", "socks"] }
+tokio = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+async-trait = "0.1"
+zeroize = "1"
+
+[dev-dependencies]
+# Same offline-HTTP choice as a0-api: wiremock 0.6 (async-native, Scenario
+# support for ordered login/bootstrap responses).
+wiremock = "0.6"
+tokio = { workspace = true, features = ["rt-multi-thread", "macros"] }

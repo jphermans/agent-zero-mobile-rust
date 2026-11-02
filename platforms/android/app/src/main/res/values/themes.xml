@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Material 3 DayNight base; Compose MaterialTheme supplies the actual
+         color scheme at runtime (dark mode follows the system). -->
+    <style name="Theme.AgentZero" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@android:color/white</item>
+    </style>
+</resources>
