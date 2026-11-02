@@ -36,3 +36,9 @@ android {
         jvmTarget = "17"
     }
 }
+
+dependencies {
+    // UniFFI-generated Kotlin performs FFI through JNA (com.sun.jna imports
+    // in the generated bindings); Android needs the @aar artifact variant.
+    implementation("net.java.dev.jna:jna:5.16.0@aar")
+}
