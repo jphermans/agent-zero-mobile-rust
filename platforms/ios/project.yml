@@ -17,21 +17,21 @@ settings:
     CODE_SIGN_STYLE: Automatic
     DEVELOPMENT_TEAM: ""
     CURRENT_PROJECT_VERSION: 1
+# Local Swift package that wraps the Rust static library (XCFramework) and the
+# generated UniFFI Swift bindings. XcodeGen requires package declarations at
+# the spec top level; targets reference them via `dependencies: - package:`.
+packages:
+  RustBridge:
+    path: RustBridge
 targets:
   AgentZero:
     type: application
     platform: iOS
     sources:
       - path: Sources
-      - path: Generated
-        optional: true
-      - path: RustBridge/Sources/A0Platform
-        createIntermediateGroups: true
     dependencies:
       - package: RustBridge
-    packages:
-      RustBridge:
-        location: RustBridge
+        product: RustBridge
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.jphermans.agentzeromobile
