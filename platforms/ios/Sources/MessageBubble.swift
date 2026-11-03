@@ -23,10 +23,14 @@ struct MessageBubble: View {
                 // TODO(bindings): swap for the shared a0-ui markdown renderer
                 // once the Rust A2UI catalog is bridged; AttributedString
                 // markdown covers the Phase-1 subset.
-                Text(try? AttributedString(
+                // try? binds looser than ??: unparenthesized, the whole
+                // ??-fallback lands inside try? and Text receives an
+                // AttributedString?. Parenthesize the try? so the fallback
+                // applies to its optional result.
+                Text((try? AttributedString(
                     markdown: displayedText,
                     options: .init(interpretedSyntax: .inlineOnlyPreservingWhitespace)
-                ) ?? AttributedString(displayedText))
+                )) ?? AttributedString(displayedText))
                     .font(.body)
                     .textSelection(.enabled)
                 if isLong {
